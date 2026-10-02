@@ -92,3 +92,57 @@ model Span {
   @@map("spans")
 }
 
+// ==============================================================================
+// LangGraph AI Checkpoint State (Managed by Python asyncpg / LangGraph)
+// ==============================================================================
+
+model Checkpoint {
+  threadId           String   @map("thread_id")
+  checkpointNs       String   @default("") @map("checkpoint_ns")
+  checkpointId       String   @map("checkpoint_id")
+  parentCheckpointId String?  @map("parent_checkpoint_id")
+  type               String?
+  checkpoint         Json
+  metadata           Json     @default("{}")
+
+  @@id([threadId, checkpointNs, checkpointId])
+  @@index([threadId])
+  @@map("checkpoints")
+}
+
+model CheckpointBlob {
+  threadId     String  @map("thread_id")
+  checkpointNs String  @default("") @map("checkpoint_ns")
+  channel      String
+  version      String
+  type         String
+  blob         Bytes?
+
+  @@id([threadId, checkpointNs, channel, version])
+  @@index([threadId])
+  @@map("checkpoint_blobs")
+}
+
+model CheckpointWrite {
+  threadId     String  @map("thread_id")
+  checkpointNs String  @default("") @map("checkpoint_ns")
+  checkpointId String  @map("checkpoint_id")
+  taskId       String  @map("task_id")
+  idx          Int
+  channel      String
+  type         String?
+  blob         Bytes
+  taskPath     String  @default("") @map("task_path")
+
+  @@id([threadId, checkpointNs, checkpointId, taskId, idx])
+  @@index([threadId])
+  @@map("checkpoint_writes")
+}
+
+model CheckpointMigration {
+  v Int @id
+
+  @@map("checkpoint_migrations")
+}
+
+

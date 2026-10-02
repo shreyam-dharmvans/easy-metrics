@@ -9,6 +9,7 @@
     "examples/*"
   ],
   "scripts": {
+    "setup": "node scripts/setup.js",
     "dev": "npm run dev:db && concurrently -n \"api,web,ai,demo\" -c \"blue,green,magenta,yellow\" \"npm run dev:api\" \"npm run dev:web\" \"npm run dev:ai\" \"npm run dev:demo\"",
     "dev:db": "docker compose up -d",
     "dev:stopdb": "docker compose down",

@@ -222,62 +222,30 @@ cd easy-metrics
 
 ---
 
-### 3. Setup Environment Variables
-Copy the example configuration file:
+### 3. Run Automated Setup
+Run the one-command setup script:
 ```bash
-cp .env.example .env
+npm run setup
 ```
-*(Add your `GROQ_API_KEY` in `.env`—get a free key at [console.groq.com](https://console.groq.com). This is required for the AI Copilot and FastMCP features to work).*
+This script automatically:
+* Creates your `.env` configuration file from `.env.example`.
+* Installs all Node.js workspace dependencies and symlinks.
+* Creates the Python virtual environment (`services/ai-agent/venv`) and installs packages.
+* Starts the PostgreSQL container via Docker Compose.
+* Pushes the Prisma database schema and creates all tables.
 
 ---
 
-### 4. Install Dependencies
-From the repository root:
-```bash
-npm install
+### 4. Add your Groq API Key to `.env`
+Open `.env` and paste your free Groq API key:
+```env
+GROQ_API_KEY="gsk_your_actual_key_here"
 ```
-This installs all workspace dependencies and sets up the internal local symlinks.
+*(Get a free key at [console.groq.com](https://console.groq.com). This is required for the AI Copilot and FastMCP features).*
 
 ---
 
-### 5. Setup Python Virtual Environment (for the AI Agent)
-```bash
-cd services/ai-agent
-python -m venv venv
-
-# Activate venv:
-# On Windows (PowerShell):
-.\venv\Scripts\Activate.ps1
-# On macOS/Linux:
-source venv/bin/activate
-
-# Install dependencies:
-pip install -r requirements.txt
-cd ../..
-```
-
----
-
-### 6. Start PostgreSQL with Docker
-```bash
-docker compose up -d
-```
-Check that the database is running:
-```bash
-docker compose ps
-```
-
----
-
-### 7. Create Database Tables
-Push the Prisma schema to your local database container:
-```bash
-npm run prisma:push --workspace=apps/api
-```
-
----
-
-### 8. Run All Services Concurrently
+### 5. Run All Services
 ```bash
 npm run dev
 ```
@@ -290,7 +258,7 @@ This single command boots all four parts of the platform together:
 
 ---
 
-### 9. Generate Live Test Traffic (Optional)
+### 6. Generate Live Test Traffic (Optional)
 Want to see live charts and waterfalls right away?  
 In a second terminal window, run:
 ```bash
