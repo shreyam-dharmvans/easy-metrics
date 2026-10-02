@@ -1,4 +1,5 @@
 import { prisma } from '../prisma.js';
+import { seedLiveTraffic } from '../seed_live_traffic.js';
 
 /**
  * Auto-seed demo project and developer credentials if database is empty.
@@ -35,6 +36,13 @@ export async function ensureDefaultProject(): Promise<void> {
 
       console.log(`✅ Default project created: "${demoProject.name}" (ID: ${demoProject.id})`);
       console.log(`🔑 Active API Key: "${demoApiKey}"`);
+    }
+
+    // Auto-seed demo telemetry if trace table is empty
+    const traceCount = await prisma.trace.count();
+    if (traceCount === 0) {
+      console.log('🌱 Traces table is empty. Auto-seeding initial demo traces...');
+      await seedLiveTraffic();
     }
   } catch (error) {
     console.warn('Note: Could not run initial seed check (PostgreSQL may not be started yet).');

@@ -427,7 +427,7 @@ function randomFloat(min: number, max: number): number {
   return parseFloat((Math.random() * (max - min) + min).toFixed(1));
 }
 
-async function seedLiveTraffic() {
+export async function seedLiveTraffic() {
   console.log('🌱 Starting live traffic seed for multiple timeframes and projects...\n');
 
   const projects = await prisma.project.findMany();
@@ -579,4 +579,7 @@ async function seedLiveTraffic() {
   console.log(`\n🎉 Successfully seeded ${totalCreated} live traces across all timeframes & projects!`);
 }
 
-seedLiveTraffic().finally(() => prisma.$disconnect());
+const isDirectExecution = process.argv[1]?.includes('seed_live_traffic');
+if (isDirectExecution) {
+  seedLiveTraffic().finally(() => prisma.$disconnect());
+}

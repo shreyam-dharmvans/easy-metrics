@@ -258,13 +258,45 @@ This single command boots all four parts of the platform together:
 
 ---
 
-### 6. Generate Live Test Traffic (Optional)
-Want to see live charts and waterfalls right away?  
-In a second terminal window, run:
-```bash
-npm run simulate
-```
-This sends a continuous stream of fast searches, slow checkout queries, and occasional errors to the demo app. Open `http://localhost:3000` to watch the live graphs update in real time!
+## 🛠️ Out-of-the-Box Development Defaults (Zero Setup Needed)
+
+When developing locally, everything is pre-configured so you can start coding or testing the UI immediately without creating manual test data:
+
+### 1. Default Developer Account (Auth Bypass)
+* In local development, you **do not need a Google Cloud account or OAuth credentials**.
+* If `GOOGLE_CLIENT_ID` is left empty in `.env`, EasyMetrics automatically falls back to the built-in local developer session.
+* Clicking **"Sign In"** or navigating to `http://localhost:3000/dashboard` immediately authenticates you as:
+  * **Name**: `Demo Developer`
+  * **Email**: `developer@easymetrics.local`
+  * **Session**: Secure HTTP-only session cookie (`em_session`).
+
+### 2. Default Project & API Key
+* On first startup, the API automatically provisions a ready-to-use project:
+  * **Project Name**: `Demo Web App`
+  * **Project Slug**: `demo-web-app`
+  * **Default API Key**: `em_live_local_dev_key`
+* The sample store in `examples/demo-app` is already configured with this API key out of the box, meaning any incoming telemetry is automatically linked to this project.
+
+### 3. Pre-Seeded Telemetry Dataset
+* You do **not** start with an empty dashboard! The database automatically comes pre-populated with **500+ realistic traces** spanning across the last 15 minutes, 1 hour, 24 hours, and 7 days.
+* **What's included**:
+  * Real-world fast routes (`GET /api/products` ~35ms)
+  * Real-world slow database queries (`POST /api/checkout` with a slow PostgreSQL query ~2,480ms)
+  * External third-party payment spans (`https://api.stripe.com/v1/charges`)
+  * Simulated application exceptions (500 status codes with full error stack traces)
+* **Perpetual freshness (`demoSync`)**: A background service runs every 5 minutes and shifts these timestamps forward so the newest trace is always ~90 seconds ago. Your charts, latency percentiles, and waterfall views are always active and full of data.
+
+---
+
+### 6. Generate Live Test Traffic (Optional for SDK Developers)
+Because the dashboard is already populated with rich traces, **you do not need to run `npm run simulate` to explore the dashboard, AI Copilot, or FastMCP**.
+
+* **Frontend (`apps/web`), AI Agent (`services/ai-agent`), or API contributors**: You don't need this command. The pre-seeded data gives you everything needed to test UI styling, AI queries, or metric aggregations.
+* **SDK contributors (`packages/sdk`)**: In a second terminal window, run:
+  ```bash
+  npm run simulate
+  ```
+  This sends a continuous stream of live HTTP requests into the demo app (`examples/demo-app` on port `5000`). Use this if you are actively modifying `@easy-metrics/node` and want to verify that your code changes correctly capture spans and ship them over HTTP to the ingestion API in real time.
 
 ---
 
