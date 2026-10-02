@@ -19,10 +19,14 @@ env/
 
 # Environment Variables & Secrets (CRITICAL: Never commit these to Git)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+.env*.local
+**/.env
+**/.env.*
+!.env.example
+*.pem
+*.key
+*.cert
 
 # Logs
 npm-debug.log*
