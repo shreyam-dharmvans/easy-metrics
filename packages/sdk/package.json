@@ -1,0 +1,51 @@
+{
+  "name": "@easy-metrics/node",
+  "version": "0.1.0",
+  "description": "Zero-config OpenTelemetry observability SDK for Node.js",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./register": {
+      "types": "./dist/register.d.ts",
+      "import": "./dist/register.js",
+      "default": "./dist/register.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc -w",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "observability",
+    "apm",
+    "opentelemetry",
+    "metrics",
+    "tracing"
+  ],
+  "author": "EasyMetrics Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.49.0",
+    "@opentelemetry/core": "^1.26.0",
+    "dotenv": "^16.4.5",
+    "@opentelemetry/resources": "^1.26.0",
+    "@opentelemetry/sdk-node": "^0.53.0",
+    "@opentelemetry/sdk-trace-base": "^1.26.0",
+    "@opentelemetry/semantic-conventions": "^1.26.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.11",
+    "typescript": "^5.5.3"
+  }
+}

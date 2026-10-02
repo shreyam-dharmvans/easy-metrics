@@ -1,0 +1,37 @@
+services:
+  # Primary PostgreSQL 16 database for EasyMetrics traces, spans, and metadata
+  postgres:
+    image: postgres:16-alpine
+    container_name: easymetrics-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: easymetrics_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d easymetrics_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Web-based database GUI running at http://localhost:8081 to visually inspect tables & traces
+  pgweb:
+    image: sosedoff/pgweb:latest
+    container_name: easymetrics-pgweb
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/easymetrics_db?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
+

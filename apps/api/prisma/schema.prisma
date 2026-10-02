@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  avatar    String?
+  projects  Project[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Project {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  ownerId   String
+  owner     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  apiKeys   ApiKey[]
+  traces    Trace[]
+  spans     Span[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("projects")
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String    @default("Default Key")
+  key        String    @unique // e.g. "em_live_..."
+  projectId  String
+  project    Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([key])
+  @@map("api_keys")
+}
+
+model Trace {
+  id          String   @id // OpenTelemetry 32-character hex trace_id
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  serviceName String   @default("node-service")
+  rootRoute   String   // e.g. "POST /api/checkout"
+  httpMethod  String   // "GET", "POST", "PUT", "DELETE"
+  statusCode  Int      // 200, 404, 500, etc.
+  durationMs  Float    // Total duration of request in ms
+  hasError    Boolean  @default(false)
+  timestamp   DateTime // UTC start time of root request
+  spans       Span[]
+
+  @@index([projectId, timestamp(sort: Desc)])
+  @@index([projectId, rootRoute])
+  @@index([projectId, hasError])
+  @@map("traces")
+}
+
+model Span {
+  id           String    @id // OpenTelemetry 16-character hex span_id
+  traceId      String
+  trace        Trace     @relation(fields: [traceId], references: [id], onDelete: Cascade)
+  projectId    String
+  project      Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentSpanId String?   // Parent span ID if nested, null if root
+  name         String    // e.g. "POST /api/checkout", "GET https://api.stripe.com/charges"
+  kind         String    // "SERVER" (incoming), "CLIENT" (outgoing), "INTERNAL"
+  httpMethod   String?   // "GET", "POST", etc.
+  httpUrl      String?   // Target URL if CLIENT span
+  statusCode   Int?      // Response status code
+  durationMs   Float     // Span execution time in ms
+  startTime    DateTime  // Start timestamp
+  endTime      DateTime  // Finish timestamp
+  hasError     Boolean   @default(false)
+  errorMessage String?
+  errorStack   String?
+  attributes   Json?     // Arbitrary tags, query params, headers
+
+  @@index([traceId])
+  @@index([projectId, startTime(sort: Desc)])
+  @@index([projectId, kind])
+  @@map("spans")
+}
+

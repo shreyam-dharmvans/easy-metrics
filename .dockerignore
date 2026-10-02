@@ -1,0 +1,38 @@
+# Dependencies and virtual environments
+node_modules/
+**/node_modules/
+venv/
+**/venv/
+.venv/
+**/__pycache__/
+*.py[cod]
+
+# Build outputs
+.next/
+**/.next/
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+
+# Environment files and secrets
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+!.env.example
+
+# Git and logs
+.git/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Testing & caches
+.pytest_cache/
+coverage/
+.turbo/
+.cache/

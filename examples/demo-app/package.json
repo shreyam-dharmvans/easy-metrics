@@ -1,0 +1,17 @@
+{
+  "name": "demo-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sample application demonstrating EasyMetrics zero-config APM",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "simulate": "node simulate-traffic.js"
+  },
+  "dependencies": {
+    "@easy-metrics/node": "*",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
