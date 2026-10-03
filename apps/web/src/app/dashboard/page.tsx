@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '../../components/navbar/Navbar';
 import { DashboardToolbar } from '../../components/dashboard/DashboardToolbar';
@@ -82,13 +82,21 @@ function DashboardView() {
     loadData(false);
   }, [loadData]);
 
-  // Reset route filter and custom range when project changes
+  // Track previous project ID to only reset filters when user genuinely switches projects
+  const prevProjectIdRef = useRef(currentProject.id);
+
   useEffect(() => {
-    if (routeParam) {
-      router.replace('/dashboard');
+    const hasProjectChanged = prevProjectIdRef.current !== currentProject.id;
+    const isHydratingFromDefault = prevProjectIdRef.current === 'default';
+
+    if (hasProjectChanged && !isHydratingFromDefault) {
+      if (routeParam) {
+        router.replace('/dashboard');
+      }
+      setCustomRange(null);
     }
-    setCustomRange(null);
-  }, [currentProject.id]);
+    prevProjectIdRef.current = currentProject.id;
+  }, [currentProject.id, routeParam, router]);
 
   // Handle clearing the route filter
   const handleClearRoute = () => {

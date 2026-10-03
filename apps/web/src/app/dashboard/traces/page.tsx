@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Navbar } from '../../../components/navbar/Navbar';
 import { TracesToolbar } from '../../../components/traces/TracesToolbar';
@@ -52,17 +52,25 @@ function TracesView() {
     }
   }, [initialRouteParam]);
 
-  // Reset all filters and search query when project changes
+  // Track previous project ID to only reset filters when user genuinely switches projects
+  const prevProjectIdRef = useRef(currentProject.id);
+
   useEffect(() => {
-    setSearchRoute('');
-    setStatusFilter('all');
-    setMinDurationMs(undefined);
-    setCustomRange(null);
-    setPage(1);
-    if (initialRouteParam) {
-      router.replace('/dashboard/traces');
+    const hasProjectChanged = prevProjectIdRef.current !== currentProject.id;
+    const isHydratingFromDefault = prevProjectIdRef.current === 'default';
+
+    if (hasProjectChanged && !isHydratingFromDefault) {
+      setSearchRoute('');
+      setStatusFilter('all');
+      setMinDurationMs(undefined);
+      setCustomRange(null);
+      setPage(1);
+      if (initialRouteParam) {
+        router.replace('/dashboard/traces');
+      }
     }
-  }, [currentProject.id]);
+    prevProjectIdRef.current = currentProject.id;
+  }, [currentProject.id, initialRouteParam, router]);
 
   // Fetch traces
   const loadData = useCallback(
