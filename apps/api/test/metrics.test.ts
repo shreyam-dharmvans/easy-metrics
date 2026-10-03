@@ -12,10 +12,20 @@ describe('Domain: Analytics, Aggregations & Trace Waterfall', () => {
 
   beforeAll(async () => {
     await ensureDefaultProject();
-    const project = await prisma.project.findFirst({
+    let project = await prisma.project.findFirst({
       orderBy: { createdAt: 'asc' },
     });
-    activeProjectId = project!.id;
+    if (!project) {
+      const user = await prisma.user.findFirst();
+      project = await prisma.project.create({
+        data: {
+          name: 'Metrics Test Project',
+          slug: 'metrics-test-project',
+          ownerId: user!.id,
+        },
+      });
+    }
+    activeProjectId = project.id;
 
     const now = new Date();
     const startTime = new Date(now.getTime() - 5000);

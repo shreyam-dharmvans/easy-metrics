@@ -7,36 +7,38 @@ import { seedLiveTraffic } from '../seed_live_traffic.js';
  */
 export async function ensureDefaultProject(): Promise<void> {
   try {
-    const userCount = await prisma.user.count();
-    if (userCount === 0) {
-      console.log('🌱 Database is empty. Creating default project and demo API key...');
-      const demoUser = await prisma.user.create({
-        data: {
-          email: 'developer@easymetrics.local',
-          name: 'Demo Developer',
-        },
-      });
+    // 1. Atomic User Upsert
+    const demoUser = await prisma.user.upsert({
+      where: { email: 'developer@easymetrics.local' },
+      update: {},
+      create: {
+        email: 'developer@easymetrics.local',
+        name: 'Demo Developer',
+      },
+    });
 
-      const demoProject = await prisma.project.create({
-        data: {
-          name: 'Demo Web App',
-          slug: 'demo-web-app',
-          ownerId: demoUser.id,
-        },
-      });
+    // 2. Atomic Project Upsert
+    const demoProject = await prisma.project.upsert({
+      where: { slug: 'demo-web-app' },
+      update: {},
+      create: {
+        name: 'Demo Web App',
+        slug: 'demo-web-app',
+        ownerId: demoUser.id,
+      },
+    });
 
-      const demoApiKey = process.env.EASY_METRICS_API_KEY || 'em_live_local_dev_key';
-      await prisma.apiKey.create({
-        data: {
-          name: 'Default Local Development Key',
-          key: demoApiKey,
-          projectId: demoProject.id,
-        },
-      });
-
-      console.log(`✅ Default project created: "${demoProject.name}" (ID: ${demoProject.id})`);
-      console.log(`🔑 Active API Key: "${demoApiKey}"`);
-    }
+    // 3. Atomic API Key Upsert
+    const demoApiKey = process.env.EASY_METRICS_API_KEY || 'em_live_local_dev_key';
+    await prisma.apiKey.upsert({
+      where: { key: demoApiKey },
+      update: {},
+      create: {
+        name: 'Default Local Development Key',
+        key: demoApiKey,
+        projectId: demoProject.id,
+      },
+    });
 
     // Auto-seed demo telemetry if trace table is empty
     const traceCount = await prisma.trace.count();
