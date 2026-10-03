@@ -312,7 +312,7 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 | Variable | Required? | Default / Example | Purpose |
 | :--- | :--- | :--- | :--- |
-| `DATABASE_URL` | **Yes** | `postgresql://postgres:postgres@localhost:5432/easymetrics_db?schema=public` | PostgreSQL connection string for Prisma and asyncpg. |
+| `DATABASE_URL` | **Yes** | `postgresql://...:5432/easymetrics_db` | PostgreSQL connection string (pre-set in `.env.example`). |
 | `API_PORT` | Optional | `4000` | Port for the Express Ingestion & Query API. |
 | `JWT_SECRET` | **Yes** | `min-32-chars-secret-key...` | Cryptographic secret for signing session cookies. |
 | `CORS_ORIGIN` | Optional | `http://localhost:3000` | Allowed frontend origin for browser fetch requests. |
