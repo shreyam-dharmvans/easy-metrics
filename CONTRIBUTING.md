@@ -216,7 +216,7 @@ Make sure you have:
 
 ### 2. Fork & Clone
 ```bash
-git clone https://github.com/your-username/easy-metrics.git
+git clone https://github.com/shreyam-dharmvans/easy-metrics.git
 cd easy-metrics
 ```
 
