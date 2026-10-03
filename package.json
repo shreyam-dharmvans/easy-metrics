@@ -16,7 +16,7 @@
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:ai": "node scripts/run-ai.js",
-    "dev:demo": "npm run dev --workspace=examples/demo-app",
+    "dev:demo": "npm run build --workspace=packages/sdk && npm run dev --workspace=examples/demo-app",
     "simulate": "npm run simulate --workspace=examples/demo-app",
     "build": "npm run build --workspaces --if-present",
     "test": "npm test --workspaces --if-present",

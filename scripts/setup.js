@@ -99,13 +99,16 @@ try {
   require('dotenv').config({ path: envPath });
 } catch (_) {}
 
-// STEP 3: Setup Node.js Dependencies
-logStep('3/6', 'Verifying Node.js workspace dependencies...');
+// STEP 3: Setup Node.js Dependencies & Build SDK
+logStep('3/6', 'Verifying Node.js dependencies and building SDK...');
 try {
   execSync('npm install', { cwd: rootDir, stdio: 'inherit' });
   logSuccess('Node.js dependencies and workspace symlinks ready.');
+  console.log('  Compiling @easy-metrics/node SDK package...');
+  execSync('npm run build --workspace=packages/sdk', { cwd: rootDir, stdio: 'inherit' });
+  logSuccess('@easy-metrics/node SDK built successfully.');
 } catch (err) {
-  logError('Failed to run npm install.');
+  logError('Failed to install Node.js dependencies or build SDK.');
   process.exit(1);
 }
 
