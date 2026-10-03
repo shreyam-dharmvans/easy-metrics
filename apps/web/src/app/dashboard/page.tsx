@@ -118,6 +118,25 @@ function DashboardView() {
   // Compute degraded routes count
   const degradedRoutesCount = routes.filter((r) => r.avgLatencyMs > thresholds.slowMs).length;
 
+  // Active metrics with graceful zero-data fallback
+  const displayMetrics: OverviewMetrics = metrics || {
+    totalRequests: 0,
+    requestsPerMinute: 0,
+    avgLatencyMs: 0,
+    p50LatencyMs: 0,
+    p95LatencyMs: 0,
+    p99LatencyMs: 0,
+    peakLatencyMs: 0,
+    errorRatePercent: 0,
+    fastRequestsCount: 0,
+    moderateRequestsCount: 0,
+    slowRequestsCount: 0,
+    slowRequestsPercent: 0,
+    statusBreakdown: { ok: 0, clientError: 0, serverError: 0 },
+    thresholds: { fast: thresholds.fastMs, slow: thresholds.slowMs },
+    timeSeries: [],
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors">
       {/* 1. Global Navigation Bar (Minimal & Clean) */}
@@ -163,40 +182,40 @@ function DashboardView() {
               <div className="h-64 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 animate-pulse" />
             </div>
           </div>
-        ) : metrics ? (
+        ) : (
           <>
             {/* 3. The 4 Golden Signal KPI Stat Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {/* Card 1: Throughput */}
               <StatCard
                 title="Throughput (RPM)"
-                value={metrics.requestsPerMinute}
-                description={`${metrics.totalRequests.toLocaleString()} total requests in window`}
-                badgeText={metrics.requestsPerMinute > 0 ? '+14.2% ↑' : 'Idle'}
-                badgeVariant={metrics.requestsPerMinute > 0 ? 'success' : 'neutral'}
+                value={displayMetrics.requestsPerMinute}
+                description={`${displayMetrics.totalRequests.toLocaleString()} total requests in window`}
+                badgeText={displayMetrics.requestsPerMinute > 0 ? '+14.2% ↑' : 'Idle'}
+                badgeVariant={displayMetrics.requestsPerMinute > 0 ? 'success' : 'neutral'}
               />
 
               {/* Card 2: Avg Response Time */}
               <StatCard
                 title="Avg Response Time"
-                value={Math.round(metrics.avgLatencyMs)}
+                value={Math.round(displayMetrics.avgLatencyMs)}
                 unit="ms"
-                badgeText={metrics.avgLatencyMs < thresholds.fastMs ? 'Snappy' : 'Normal'}
-                badgeVariant={metrics.avgLatencyMs < thresholds.fastMs ? 'success' : 'warning'}
+                badgeText={displayMetrics.avgLatencyMs < thresholds.fastMs ? 'Snappy' : 'Normal'}
+                badgeVariant={displayMetrics.avgLatencyMs < thresholds.fastMs ? 'success' : 'warning'}
                 description="Global average across routes"
               />
 
               {/* Card 3: Slow Requests (>slowMs) */}
               <StatCard
                 title={`Slow Requests (>${thresholds.slowMs}ms)`}
-                value={metrics.slowRequestsCount}
+                value={displayMetrics.slowRequestsCount}
                 unit="reqs"
-                badgeText={`${metrics.slowRequestsPercent}%`}
-                badgeVariant={metrics.slowRequestsCount > 0 ? 'warning' : 'success'}
-                isWarning={metrics.slowRequestsCount > 10}
+                badgeText={`${displayMetrics.slowRequestsPercent}%`}
+                badgeVariant={displayMetrics.slowRequestsCount > 0 ? 'warning' : 'success'}
+                isWarning={displayMetrics.slowRequestsCount > 10}
                 description={
-                  metrics.slowRequestsCount > 0
-                    ? `⚠️ ${metrics.slowRequestsCount} requests breached SLO`
+                  displayMetrics.slowRequestsCount > 0
+                    ? `⚠️ ${displayMetrics.slowRequestsCount} requests breached SLO`
                     : 'All requests within SLO budget'
                 }
               />
@@ -204,12 +223,12 @@ function DashboardView() {
               {/* Card 4: Failed Requests (5xx) */}
               <StatCard
                 title="Failed Requests (5xx)"
-                value={metrics.statusBreakdown.serverError}
+                value={displayMetrics.statusBreakdown.serverError}
                 unit="errors"
-                badgeText={`${metrics.errorRatePercent}%`}
-                badgeVariant={metrics.statusBreakdown.serverError > 0 ? 'danger' : 'success'}
+                badgeText={`${displayMetrics.errorRatePercent}%`}
+                badgeVariant={displayMetrics.statusBreakdown.serverError > 0 ? 'danger' : 'success'}
                 description={
-                  metrics.statusBreakdown.serverError > 0
+                  displayMetrics.statusBreakdown.serverError > 0
                     ? 'Unhandled server exceptions'
                     : 'Zero 5xx server exceptions'
                 }
@@ -218,29 +237,29 @@ function DashboardView() {
 
             {/* 4. Row 1: Primary Charts (Traffic vs Dedicated Latency Trend) */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <TrafficVolumeChart data={metrics.timeSeries} isLoading={isRefreshing} />
-              <LatencyTrendChart data={metrics.timeSeries} isLoading={isRefreshing} />
+              <TrafficVolumeChart data={displayMetrics.timeSeries} isLoading={isRefreshing} />
+              <LatencyTrendChart data={displayMetrics.timeSeries} isLoading={isRefreshing} />
             </div>
 
             {/* 5. Row 2: Speed Experience Distribution & Explorer Launchpad */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
               <SpeedDistributionChart
-                data={metrics.timeSeries}
+                data={displayMetrics.timeSeries}
                 fastMs={thresholds.fastMs}
                 slowMs={thresholds.slowMs}
                 isLoading={isRefreshing}
               />
               <StatusAndLaunchpad
-                totalRequests={metrics.totalRequests}
-                statusBreakdown={metrics.statusBreakdown}
+                totalRequests={displayMetrics.totalRequests}
+                statusBreakdown={displayMetrics.statusBreakdown}
                 routesCount={routes.length}
                 degradedRoutesCount={degradedRoutesCount}
-                tracesCount={metrics.totalRequests}
-                slowTracesCount={metrics.slowRequestsCount}
+                tracesCount={displayMetrics.totalRequests}
+                slowTracesCount={displayMetrics.slowRequestsCount}
               />
             </div>
           </>
-        ) : null}
+        )}
       </main>
     </div>
   );
