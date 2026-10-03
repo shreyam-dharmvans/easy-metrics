@@ -12,11 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ============================================================================
-  # 1. NODE.JS MONOREPO: TYPECHECK, NEXT.JS BUILD & INTEGRATION TESTS
-  # ============================================================================
-  node-ci:
-    name: Node.js Monorepo (SDK, API, Web)
+  ci:
+    name: Build & Test (Full Monorepo)
     runs-on: ubuntu-latest
 
     services:
@@ -37,6 +34,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/easymetrics_db?schema=public
       JWT_SECRET: easymetrics-ci-test-secret-at-least-32-chars-long
+      GROQ_API_KEY: mock_ci_groq_api_key_not_invoked_live
+      GROQ_MODEL: llama-3.3-70b-versatile
       NODE_ENV: test
 
     steps:
@@ -49,56 +48,6 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Install Monorepo Dependencies
-        run: npm ci
-
-      - name: Generate Prisma Client & Push Database Schema
-        run: |
-          npm run prisma:generate --workspace=apps/api
-          npm run prisma:push --workspace=apps/api
-
-      - name: Monorepo Typecheck & Production Build
-        run: npm run build
-
-      - name: Run Node.js & API Integration Test Suites
-        run: npm test
-
-  # ============================================================================
-  # 2. PYTHON SERVICE: FASTAPI & LANGGRAPH STATE TESTS
-  # ============================================================================
-  python-ci:
-    name: AI Agent (FastAPI & LangGraph)
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: easymetrics_db
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/easymetrics_db
-      JWT_SECRET: easymetrics-ci-test-secret-at-least-32-chars-long
-      GROQ_API_KEY: mock_ci_groq_api_key_not_invoked_live
-      GROQ_MODEL: llama-3.3-70b-versatile
-
-    defaults:
-      run:
-        working-directory: services/ai-agent
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
       - name: Setup Python 3.12
         uses: actions/setup-python@v5
         with:
@@ -106,10 +55,24 @@ jobs:
           cache: 'pip'
           cache-dependency-path: services/ai-agent/requirements.txt
 
-      - name: Install Python Dependencies
+      - name: Install Node & Python Dependencies
         run: |
+          npm ci
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r services/ai-agent/requirements.txt
 
-      - name: Run Pytest Test Suite
+      - name: Generate Prisma Client & Push Database Schema
+        run: |
+          npm run prisma:generate --workspace=apps/api
+          npm run prisma:push --workspace=apps/api
+          npm run seed --workspace=apps/api
+
+      - name: Monorepo Typecheck & Production Build
+        run: npm run build
+
+      - name: Run Vitest Test Suite (SDK & API)
+        run: npm test
+
+      - name: Run Pytest Test Suite (AI Agent)
+        working-directory: services/ai-agent
         run: python -m pytest tests/
