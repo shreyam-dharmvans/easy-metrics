@@ -185,8 +185,11 @@ export async function handleGoogleCallback(req: Request, res: Response) {
       path: '/',
     });
 
-    // Redirect to web dashboard
-    return res.redirect(`${CLIENT_ORIGIN}/dashboard`);
+    // Clear any residual demo session cookies
+    res.clearCookie('easymetrics_is_demo', { path: '/' });
+
+    // Redirect to web dashboard with auth=success signal
+    return res.redirect(`${CLIENT_ORIGIN}/dashboard?auth=success`);
   } catch (error) {
     console.error('Error during Google OAuth callback:', error);
     return res.redirect(`${CLIENT_ORIGIN}/?auth_error=server_error`);

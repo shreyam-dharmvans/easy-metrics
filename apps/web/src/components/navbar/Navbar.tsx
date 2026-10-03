@@ -7,7 +7,7 @@ import { ProjectSwitcher } from './ProjectSwitcher';
 import { UserMenu } from './UserMenu';
 import { ThemeToggle } from '../ThemeToggle';
 import { useAiChat } from '../../context/AiChatContext';
-import { useProject, clearAllEasyMetricsStorage } from '../../context/ProjectContext';
+import { useProject, clearAllEasyMetricsStorage, initiateGoogleSignIn } from '../../context/ProjectContext';
 
 export interface NavbarProps {
   // Active project context
@@ -54,12 +54,13 @@ export function Navbar({
             >
               <span>← Exit Demo</span>
             </button>
-            <a
-              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/v1/auth/google`}
-              className="bg-white text-emerald-800 hover:bg-emerald-50 px-2.5 py-1 rounded-md font-bold text-xs shadow-xs transition-colors"
+            <button
+              onClick={initiateGoogleSignIn}
+              type="button"
+              className="bg-white text-emerald-800 hover:bg-emerald-50 px-2.5 py-1 rounded-md font-bold text-xs shadow-xs transition-colors cursor-pointer"
             >
               Sign In with Google
-            </a>
+            </button>
           </div>
         </div>
       )}

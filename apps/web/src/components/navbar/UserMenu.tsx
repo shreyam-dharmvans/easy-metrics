@@ -44,7 +44,7 @@ export function UserMenu() {
       .catch((err) => {
         console.error('Failed to load user profile in UserMenu:', err);
       });
-  }, []);
+  }, [isDemo]);
 
   // Close user dropdown when clicking outside
   useEffect(() => {

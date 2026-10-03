@@ -118,6 +118,16 @@ export function clearAllEasyMetricsStorage() {
   }
 }
 
+/**
+ * Initiates Google OAuth while ensuring all demo session markers are completely wiped.
+ */
+export function initiateGoogleSignIn() {
+  clearAllEasyMetricsStorage();
+  const rawBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+  const authUrl = `${rawBase}/api/v1/auth/google`;
+  window.location.href = authUrl;
+}
+
 function DemoRouteWatcher({ onSync }: { onSync: () => void }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -134,24 +144,6 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [currentProject, setCurrentProject] = useState<ProjectItem>(DEFAULT_PROJECT);
   const [isLoading, setIsLoading] = useState(true);
   const [isDemo, setIsDemo] = useState(false);
-
-  const syncDemoState = useCallback(() => {
-    const active = checkIsDemoMode();
-    setIsDemo(active);
-    if (active) {
-      setDemoModeStorage(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    syncDemoState();
-    window.addEventListener('popstate', syncDemoState);
-    window.addEventListener('storage', syncDemoState);
-    return () => {
-      window.removeEventListener('popstate', syncDemoState);
-      window.removeEventListener('storage', syncDemoState);
-    };
-  }, [syncDemoState]);
 
   const refreshProjects = useCallback(async () => {
     try {
@@ -178,6 +170,36 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     }
   }, []);
+
+  const syncDemoState = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('auth') === 'success') {
+        clearAllEasyMetricsStorage();
+        setIsDemo(false);
+        params.delete('auth');
+        const clean = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
+        window.history.replaceState(null, '', clean);
+        refreshProjects();
+        return;
+      }
+    }
+    const active = checkIsDemoMode();
+    setIsDemo(active);
+    if (active) {
+      setDemoModeStorage(true);
+    }
+  }, [refreshProjects]);
+
+  useEffect(() => {
+    syncDemoState();
+    window.addEventListener('popstate', syncDemoState);
+    window.addEventListener('storage', syncDemoState);
+    return () => {
+      window.removeEventListener('popstate', syncDemoState);
+      window.removeEventListener('storage', syncDemoState);
+    };
+  }, [syncDemoState]);
 
   useEffect(() => {
     refreshProjects();

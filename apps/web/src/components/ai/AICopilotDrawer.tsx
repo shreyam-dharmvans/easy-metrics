@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAiChat } from '../../context/AiChatContext';
-import { useProject } from '../../context/ProjectContext';
+import { useProject, initiateGoogleSignIn } from '../../context/ProjectContext';
 import { AiMarkdownRenderer } from './AiMarkdownRenderer';
 import { ToolExecutionBadge } from './ToolExecutionBadge';
 import { ToolExecution } from '../../types/ai';
@@ -311,12 +311,13 @@ export function AICopilotDrawer() {
                 Sign in with Google to connect your backend services and run AI SRE diagnostics on your live traces.
               </p>
               <div className="pt-1">
-                <a
-                  href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/v1/auth/google`}
-                  className="inline-block px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-2xs transition-colors"
+                <button
+                  onClick={initiateGoogleSignIn}
+                  type="button"
+                  className="inline-block px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs shadow-2xs transition-colors cursor-pointer"
                 >
                   Sign In with Google
-                </a>
+                </button>
               </div>
             </div>
           ) : (

@@ -26,7 +26,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { Navbar } from '../../../components/navbar/Navbar';
-import { useProject, clearAllEasyMetricsStorage } from '../../../context/ProjectContext';
+import { useProject, clearAllEasyMetricsStorage, initiateGoogleSignIn } from '../../../context/ProjectContext';
 import { useThresholds } from '../../../context/ThresholdContext';
 import {
   fetchCurrentProject,
@@ -300,12 +300,13 @@ init({
                 Project creation, deletion, renaming, and API key generation or revocation are strictly disabled. Sign in with Google to create and manage your own production projects.
               </div>
             </div>
-            <a
-              href={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/v1/auth/google`}
-              className="shrink-0 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition-colors self-start sm:self-auto text-center"
+            <button
+              onClick={initiateGoogleSignIn}
+              type="button"
+              className="shrink-0 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition-colors self-start sm:self-auto text-center cursor-pointer"
             >
               Sign In with Google
-            </a>
+            </button>
           </div>
         )}
 
