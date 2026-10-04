@@ -11,6 +11,7 @@ import {
   Code2,
   LogOut,
   Sparkles,
+  Bot,
 } from 'lucide-react';
 import { useProject, clearAllEasyMetricsStorage } from '../../context/ProjectContext';
 
@@ -185,6 +186,15 @@ export function UserMenu() {
             >
               <Code2 className="w-4 h-4 text-zinc-400" />
               <span className="font-medium">SDK Integration Guide</span>
+            </Link>
+
+            <Link
+              href={isDemo ? "/dashboard/settings?tab=mcp&demo=true" : "/dashboard/settings?tab=mcp"}
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-colors"
+            >
+              <Bot className="w-4 h-4 text-zinc-400" />
+              <span className="font-medium">MCP Server (AI IDE Setup)</span>
             </Link>
           </div>
 

@@ -24,6 +24,7 @@ import {
   Sparkles,
   Info,
   ShieldAlert,
+  Bot,
 } from 'lucide-react';
 import { Navbar } from '../../../components/navbar/Navbar';
 import { useProject, clearAllEasyMetricsStorage, initiateGoogleSignIn } from '../../../context/ProjectContext';
@@ -53,17 +54,18 @@ function SettingsContent() {
   const { thresholds, updateThresholds, resetThresholds } = useThresholds();
 
   // Active tab state
-  const [activeTab, setActiveTab] = useState<'projects' | 'apikeys' | 'sdk' | 'thresholds'>('projects');
+  type SettingsTab = 'projects' | 'apikeys' | 'sdk' | 'mcp' | 'thresholds';
+  const [activeTab, setActiveTab] = useState<SettingsTab>('projects');
 
   // Sync tab with URL query parameter
   useEffect(() => {
-    if (queryTab && ['projects', 'apikeys', 'sdk', 'thresholds'].includes(queryTab)) {
+    if (queryTab && ['projects', 'apikeys', 'sdk', 'mcp', 'thresholds'].includes(queryTab)) {
       setActiveTab(queryTab as any);
     }
   }, [queryTab]);
 
   // Handle tab switch and keep URL in sync cleanly
-  const handleTabChange = (tab: 'projects' | 'apikeys' | 'sdk' | 'thresholds') => {
+  const handleTabChange = (tab: SettingsTab) => {
     setActiveTab(tab);
     router.replace(`/dashboard/settings?tab=${tab}${isDemo ? '&demo=true' : ''}`);
   };
@@ -95,6 +97,7 @@ function SettingsContent() {
   // Copy feedback state
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
+  const [copiedMcpSnippet, setCopiedMcpSnippet] = useState(false);
   const [visibleKeyIds, setVisibleKeyIds] = useState<Record<string, boolean>>({});
 
   // Threshold local form state
@@ -286,6 +289,24 @@ init({
 
 // Your existing Express, database, and HTTP code runs untouched!`;
 
+  const agentUrl = (process.env.NEXT_PUBLIC_AGENT_URL || 'http://localhost:8000').replace(/\/+$/, '');
+  const mcpSseUrl = `${agentUrl}/mcp/sse`;
+
+  const mcpConfigCode = JSON.stringify(
+    {
+      mcpServers: {
+        easymetrics: {
+          url: mcpSseUrl,
+          headers: {
+            'x-api-key': activeApiKeyStr,
+          },
+        },
+      },
+    },
+    null,
+    2
+  );
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors">
       <Navbar />
@@ -376,6 +397,21 @@ init({
               >
                 <Code2 className="w-3.5 h-3.5 text-zinc-400" />
                 <span>SDK Quickstart</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTabChange('mcp')}
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${activeTab === 'mcp'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white shadow-xs font-semibold'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white'
+                  }`}
+              >
+                <Bot className="w-3.5 h-3.5 text-zinc-400" />
+                <span>MCP Server</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-[10px] font-semibold text-indigo-700 dark:text-indigo-300">
+                  AI IDEs
+                </span>
               </button>
 
               <button
@@ -771,7 +807,159 @@ init({
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 4: LATENCY THRESHOLDS                                                 */}
+        {/* TAB 4: FASTMPP SERVER (CURSOR / CLAUDE / ANTIGRAVITY)                     */}
+        {/* ========================================================================= */}
+        {activeTab === 'mcp' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-base font-bold text-zinc-950 dark:text-white flex items-center gap-2">
+                  <span>FastMCP Server Setup</span>
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-[10px] font-semibold text-indigo-700 dark:text-indigo-300">
+                    Antigravity · VS Code · Claude · Cursor
+                  </span>
+                </h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Connect your AI editor to EasyMetrics to inspect live runtime execution waterfalls and query latencies directly from chat.
+                </p>
+              </div>
+
+              {/* Status Pill */}
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100/80 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 text-xs self-start sm:self-auto font-mono">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-zinc-700 dark:text-zinc-300">SSE Endpoint:</span>
+                <span className="font-semibold text-zinc-900 dark:text-white">/mcp/sse</span>
+              </div>
+            </div>
+
+            {/* Scoped Project Banner */}
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 text-xs">
+              <Info className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <div className="text-zinc-700 dark:text-zinc-300">
+                Generated configuration for active project: <strong className="text-zinc-950 dark:text-white">{currentProject.name}</strong>.
+              </div>
+            </div>
+
+            {/* Terminal Window JSON Configuration */}
+            <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-zinc-950 text-zinc-100 shadow-xl overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-rose-500/80" />
+                    <span className="w-3 h-3 rounded-full bg-amber-500/80" />
+                    <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
+                  </div>
+                  <span className="text-xs font-mono text-zinc-400 ml-2">mcpServers Configuration (JSON)</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(mcpConfigCode);
+                    setCopiedMcpSnippet(true);
+                    setTimeout(() => setCopiedMcpSnippet(false), 2000);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  {copiedMcpSnippet ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-zinc-400" />}
+                  <span>{copiedMcpSnippet ? 'Copied config' : 'Copy JSON'}</span>
+                </button>
+              </div>
+
+              <div className="p-4 sm:p-5 font-mono text-xs overflow-x-auto leading-relaxed text-zinc-300">
+                <pre>{mcpConfigCode}</pre>
+              </div>
+            </div>
+
+            {/* IDE Setup Instructions Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Google Antigravity & Claude Desktop Card */}
+              <div className="p-5 rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm shadow-2xs">
+                    🤖
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-zinc-950 dark:text-white">Google Antigravity &amp; Claude Desktop</h3>
+                    <p className="text-[11px] text-zinc-500">Native Open MCP Configuration</p>
+                  </div>
+                </div>
+
+                <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2 list-decimal list-inside pl-1 leading-relaxed">
+                  <li>Open your MCP configuration file (e.g. <code className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">claude_desktop_config.json</code> or Antigravity MCP settings).</li>
+                  <li>Under the <code className="font-mono text-zinc-900 dark:text-zinc-100">&quot;mcpServers&quot;</code> key, paste the <code className="font-mono text-emerald-600 dark:text-emerald-400">&quot;easymetrics&quot;</code> block above.</li>
+                  <li>Save and restart your editor session or reload MCP servers.</li>
+                  <li>EasyMetrics observability tools (<code className="text-zinc-900 dark:text-zinc-200 font-mono text-[11px]">inspect_recent_traces</code>, <code className="text-zinc-900 dark:text-zinc-200 font-mono text-[11px]">query_route_metrics</code>) are immediately ready for AI use.</li>
+                </ol>
+              </div>
+
+              {/* VS Code & Cursor Card */}
+              <div className="p-5 rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm shadow-2xs">
+                    ⚡
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-zinc-950 dark:text-white">VS Code &amp; Cursor</h3>
+                    <p className="text-[11px] text-zinc-500">Cline, Roo Code, Continue, or Cursor</p>
+                  </div>
+                </div>
+
+                <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2 list-decimal list-inside pl-1 leading-relaxed">
+                  <li>In VS Code with extensions like <strong className="text-zinc-900 dark:text-zinc-100">Cline</strong>, <strong className="text-zinc-900 dark:text-zinc-100">Roo Code</strong>, or <strong className="text-zinc-900 dark:text-zinc-100">Continue</strong>, add an SSE MCP server using the URL above.</li>
+                  <li>In Cursor: Open <strong className="text-zinc-900 dark:text-zinc-100">Settings</strong> &rarr; <strong className="text-zinc-900 dark:text-zinc-100">Features</strong> &rarr; <strong className="text-zinc-900 dark:text-zinc-100">MCP</strong> &rarr; <strong className="text-zinc-900 dark:text-zinc-100">+ Add New MCP Server</strong> (or paste into <code className="text-indigo-600 dark:text-indigo-400 font-mono">.cursor/mcp.json</code>).</li>
+                  <li>Set Type to <strong className="text-zinc-900 dark:text-zinc-100">SSE</strong>, Name to <code className="text-indigo-600 dark:text-indigo-400 font-mono">easymetrics</code>, and paste the URL.</li>
+                  <li>Your AI pair programmer can now inspect performance bottlenecks and latency regressions directly during chat.</li>
+                </ol>
+              </div>
+            </div>
+
+            {/* Example Prompts to Try */}
+            <div className="p-5 rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">
+                  Example Prompts to Try in Your AI IDE (Antigravity, VS Code, Claude)
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800 text-xs space-y-1.5">
+                  <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                    <span>⚡</span>
+                    <span>Find Slow Bottlenecks</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 italic leading-relaxed">
+                    &quot;Check EasyMetrics for recent slow requests on my API. Inspect the child spans and identify which database query caused the delay.&quot;
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800 text-xs space-y-1.5">
+                  <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                    <span>🚨</span>
+                    <span>Diagnose 500 Errors</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 italic leading-relaxed">
+                    &quot;Ask EasyMetrics for any failed traces in the last 15 minutes. Inspect the raw error stack trace and suggest a code fix.&quot;
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950/50 border border-zinc-200/60 dark:border-zinc-800 text-xs space-y-1.5">
+                  <div className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+                    <span>📊</span>
+                    <span>Percentile Benchmark</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 italic leading-relaxed">
+                    &quot;Query EasyMetrics route percentiles (p50, p95, p99) for my endpoints and recommend which routes need index optimization.&quot;
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 5: LATENCY THRESHOLDS                                                 */}
         {/* ========================================================================= */}
         {activeTab === 'thresholds' && (
           <div className="space-y-6">
