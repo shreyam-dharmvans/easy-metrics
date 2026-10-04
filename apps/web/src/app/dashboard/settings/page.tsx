@@ -111,11 +111,12 @@ function SettingsContent() {
   }, [thresholds]);
 
   // Load API keys for currently selected project
-  const loadApiKeys = useCallback(async () => {
-    if (!currentProject?.id || currentProject.id === 'default') return;
+  const loadApiKeys = useCallback(async (explicitProjectId?: string) => {
+    const targetId = explicitProjectId || currentProject?.id;
+    if (!targetId || targetId === 'default') return;
     try {
       setKeysLoading(true);
-      const data = await fetchCurrentProject();
+      const data = await fetchCurrentProject(targetId);
       if (data?.apiKeys) {
         setApiKeys(data.apiKeys);
       }
@@ -197,7 +198,7 @@ function SettingsContent() {
       setIsCreatingKey(true);
       const res = await createApiKeyApi(newKeyName.trim(), currentProject.id);
       if (res) {
-        await loadApiKeys();
+        await loadApiKeys(currentProject.id);
         await refreshProjects();
         setNewKeyName('');
         setIsNewKeyModalOpen(false);
@@ -218,7 +219,7 @@ function SettingsContent() {
     if (!confirmed) return;
     try {
       await deleteApiKeyApi(id);
-      await loadApiKeys();
+      await loadApiKeys(currentProject.id);
       await refreshProjects();
     } catch (err) {
       alert('Failed to delete API key: ' + (err as any).message);

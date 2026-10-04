@@ -12,9 +12,12 @@ async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Pr
       new URLSearchParams(window.location.search).get('demo') === 'true' ||
       document.cookie.includes('easymetrics_is_demo=true'));
 
+  const savedProjectId = typeof window !== 'undefined' ? localStorage.getItem('em_project_id') : null;
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(isDemo ? { 'x-easymetrics-demo': 'true' } : {}),
+    ...(savedProjectId && savedProjectId !== 'default' ? { 'x-project-id': savedProjectId } : {}),
     ...(options.headers as Record<string, string>),
   };
 
@@ -132,7 +135,7 @@ export async function fetchProjects(): Promise<
   return fetchWithAuth('/projects');
 }
 
-export async function fetchCurrentProject(): Promise<{
+export async function fetchCurrentProject(projectId?: string): Promise<{
   id: string;
   name: string;
   slug: string;
@@ -144,7 +147,8 @@ export async function fetchCurrentProject(): Promise<{
     createdAt: string;
   }>;
 }> {
-  return fetchWithAuth('/projects/current');
+  const query = projectId && projectId !== 'default' ? `?projectId=${encodeURIComponent(projectId)}` : '';
+  return fetchWithAuth(`/projects/current${query}`);
 }
 
 function assertNotDemo(actionName: string) {
