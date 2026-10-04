@@ -275,6 +275,15 @@ def get_telemetry_schema() -> str:
     return """
 ### EasyMetrics Telemetry Database Schema
 
+CRITICAL POSTGRESQL SYNTAX RULES:
+1. Column names use camelCase and MUST be enclosed in double quotes in SQL!
+   Example: t."id", t."projectId", t."rootRoute", t."durationMs", s."traceId", s."parentSpanId", s."durationMs", s."name", s."kind".
+   NEVER write unquoted identifiers like s.traceId or t.projectId (PostgreSQL will fold them to lowercase s.traceid / t.projectid and throw a column does not exist error!).
+2. Table join syntax: JOIN spans s ON s."traceId" = t.id
+3. Always filter by t."projectId" = '<active_project_id>'.
+4. To identify database query spans: check `s.kind = 'INTERNAL'` or `s.name ILIKE '%SELECT%'` or `s.name ILIKE '%INSERT%'` or `s.name ILIKE '%UPDATE%'` or `s.name ILIKE '%DatabaseQuery%'`.
+5. To identify external HTTP client spans: check `s.kind = 'CLIENT'`.
+
 #### Table: `traces`
 Root incoming HTTP server requests (parent trace).
 - `id` (VARCHAR / TEXT, PK): OpenTelemetry 32-character hex trace_id.
@@ -293,8 +302,8 @@ Individual execution units inside a trace (e.g. DB queries, external HTTP calls)
 - `traceId` (TEXT, FK): References `traces.id`.
 - `projectId` (TEXT): Project identifier.
 - `parentSpanId` (TEXT, NULLABLE): ID of parent span, NULL if root request.
-- `name` (TEXT): Span name, e.g. "GET https://dummyjson.com/products".
-- `kind` (TEXT): "SERVER" (incoming), "CLIENT" (outgoing), "INTERNAL".
+- `name` (TEXT): Span name, e.g. "SELECT * FROM users", "POST https://api.stripe.com/v1/charges".
+- `kind` (TEXT): "SERVER" (incoming root), "CLIENT" (outgoing external HTTP calls), "INTERNAL" (database queries, auth, internal functions).
 - `httpMethod` (TEXT, NULLABLE): HTTP method if client request.
 - `httpUrl` (TEXT, NULLABLE): Full destination URL for outgoing network hops.
 - `statusCode` (INT, NULLABLE): Response status code.

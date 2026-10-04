@@ -24,7 +24,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 
 from .config import settings
 from .tools import ALL_TOOLS, TOOL_MAP
-from .context import set_current_project_id
+from .context import get_current_project_id, set_current_project_id
 
 logger = logging.getLogger("easymetrics.agent")
 
@@ -54,8 +54,11 @@ CRITICAL CONSTRAINTS:
    - Emphasize architectural recommendations (e.g. index candidate on column X, caching recommendation for key Y, parallelizing sequential queries A and B) rather than generating full source code files.
 
 4. Custom Metrics / SQL:
-   - If the user asks an ad-hoc statistical question, call get_db_schema first to verify exact column names.
-   - Write safe, read-only SELECT queries via execute_custom_sql.
+   - For general route performance or slow traces, prefer calling get_route_health or get_trace_waterfall directly first.
+   - If composing custom SQL queries via execute_custom_sql:
+     a) PostgreSQL columns in EasyMetrics are double-quoted camelCase: ALWAYS write s."traceId", t."id", t."projectId", t."rootRoute", t."durationMs", s."durationMs", s."kind", s."name".
+     b) Filter traces by: t."projectId" = '<active_project_id>'.
+     c) Database spans have s.kind = 'INTERNAL' (or names like SELECT/INSERT/UPDATE). External HTTP API calls have s.kind = 'CLIENT'.
    - If a query fails, read the PostgreSQL error message and self-heal.
 
 5. Tone:
@@ -82,31 +85,66 @@ async def agent_node(state: MessagesState) -> Dict[str, Any]:
     """
     Reasoning node: Groq evaluates the user prompt and conversation history,
     deciding whether to call tools or formulate the final answer.
-    Applies sliding window trimming to stay strictly within Groq TPM limits.
+    Preserves the user's active prompt while budgeting tool payload sizes.
     """
     raw_messages = state["messages"]
 
     # Filter out existing system message to manage window cleanly
     non_system = [m for m in raw_messages if not isinstance(m, SystemMessage)]
 
-    # Keep a sliding window of the most recent messages (last 6)
-    if len(non_system) > 6:
-        trimmed = non_system[-6:]
-        # Ensure we don't start with an orphaned ToolMessage without its preceding AIMessage
-        while trimmed and isinstance(trimmed[0], ToolMessage):
-            trimmed = trimmed[1:]
-        non_system = trimmed
+    # 1. Locate the active user prompt (the most recent HumanMessage)
+    human_indices = [i for i, m in enumerate(non_system) if isinstance(m, HumanMessage)]
+    if human_indices:
+        latest_human_idx = human_indices[-1]
+        active_human_msg = non_system[latest_human_idx]
+        current_turn_msgs = non_system[latest_human_idx + 1:]
+        prior_msgs = non_system[:latest_human_idx]
+    else:
+        active_human_msg = None
+        current_turn_msgs = non_system
+        prior_msgs = []
 
-    # Budget tool output sizes to guarantee we stay comfortably under the 8,000 TPM limit
+    # 2. Retain up to 4 prior conversation messages for conversational memory
+    if len(prior_msgs) > 4:
+        prior_msgs = prior_msgs[-4:]
+        while prior_msgs and isinstance(prior_msgs[0], ToolMessage):
+            prior_msgs = prior_msgs[1:]
+
+    # 3. For the active turn, keep the active human prompt + recent tool rounds (up to 8 messages)
+    if len(current_turn_msgs) > 8:
+        current_turn_msgs = current_turn_msgs[-8:]
+        while current_turn_msgs and isinstance(current_turn_msgs[0], ToolMessage):
+            current_turn_msgs = current_turn_msgs[1:]
+
+    # Reassemble: prior history + active human prompt + active turn tool messages
+    if active_human_msg:
+        window = prior_msgs + [active_human_msg] + current_turn_msgs
+    else:
+        window = prior_msgs + current_turn_msgs
+
+    # 4. Budget tool output sizes to guarantee we stay comfortably under the 8,000 TPM limit
     budgeted_messages = []
-    for m in non_system:
+    for m in window:
         if isinstance(m, ToolMessage) and len(str(m.content)) > 2500:
             truncated = str(m.content)[:2500] + "\n... [telemetry truncated to stay within token budget]"
             budgeted_messages.append(ToolMessage(content=truncated, tool_call_id=m.tool_call_id, name=getattr(m, "name", None)))
         else:
             budgeted_messages.append(m)
 
-    messages_to_send = [SystemMessage(content=SRE_SYSTEM_PROMPT)] + budgeted_messages
+    # 5. Inject active project ID into system prompt so the LLM doesn't have to guess or call get_project_context
+    try:
+        active_project_id = get_current_project_id()
+    except Exception:
+        active_project_id = "default_project"
+
+    enriched_system_prompt = f"""{SRE_SYSTEM_PROMPT}
+
+ACTIVE SESSION CONTEXT:
+- Active Project ID: "{active_project_id}"
+- In execute_custom_sql queries, ALWAYS filter traces by: t."projectId" = '{active_project_id}'
+"""
+
+    messages_to_send = [SystemMessage(content=enriched_system_prompt)] + budgeted_messages
 
     llm = get_llm()
     response = await llm.ainvoke(messages_to_send)
