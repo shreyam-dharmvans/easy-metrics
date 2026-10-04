@@ -75,6 +75,17 @@ async def verify_project_ownership(user_id: str, project_id: str) -> bool:
     return row is not None
 
 
+async def get_user_default_project_id(user_id: str) -> Optional[str]:
+    """
+    Retrieves the primary project ID owned by a specific user.
+    Used when a session token is authenticated without an explicit x-project-id header.
+    """
+    pool = get_db_pool()
+    query = 'SELECT id FROM projects WHERE "ownerId" = $1 ORDER BY "createdAt" ASC LIMIT 1;'
+    row = await pool.fetchrow(query, user_id)
+    return row["id"] if row else None
+
+
 async def get_project_info(project_id: str) -> Optional[Dict[str, Any]]:
     """
     Retrieves human-readable project details (name, slug) given a projectId.

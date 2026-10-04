@@ -44,9 +44,10 @@ class Settings(BaseModel):
         default_factory=lambda: os.getenv("MCP_AUTH_ENABLED", "true").lower() == "true"
     )
     jwt_secret: str = Field(
-        default_factory=lambda: os.getenv(
-            "JWT_SECRET",
-            "easymetrics-dev-jwt-secret-replace-in-production-min-32-chars",
+        default_factory=lambda: (
+            os.getenv("JWT_SECRET")
+            or os.getenv("AGENT_JWT_SECRET")
+            or "easymetrics-dev-jwt-secret-replace-in-production-min-32-chars"
         )
     )
 

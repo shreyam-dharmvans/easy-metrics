@@ -8,6 +8,7 @@ from ..config import settings
 from ..db import (
     get_project_id_by_api_key,
     verify_project_ownership,
+    get_user_default_project_id,
     get_default_demo_project_id,
 )
 from ..context import set_current_project_id, reset_current_project_id
@@ -18,7 +19,7 @@ logger = logging.getLogger("easymetrics.middleware.auth")
 class StatelessAuthMiddleware:
     """
     Stateless Security Bouncer & Context Injector (Pure ASGI Middleware):
-    1. Extracts 'Authorization: Bearer <token>' and 'x-project-id'.
+    1. Extracts 'Authorization: Bearer <token>', 'x-api-key', or 'token' cookie.
     2. Resolves token (API key or JWT) to verified projectId.
     3. Sets the async ContextVar 'current_project_id' for downstream tools.
     4. Bypasses FastMCP (/mcp) and health endpoints without buffering streams.
@@ -59,33 +60,50 @@ class StatelessAuthMiddleware:
             await response(scope, receive, send)
             return
 
-        token = (auth.replace("Bearer ", "").strip() if auth else None) or api_key_header or None
+        # Extract token from: 1) Authorization header, 2) x-api-key header, 3) 'token' HttpOnly cookie
+        cookie_token = None
+        if cookie_header:
+            for item in cookie_header.split(";"):
+                item = item.strip()
+                if item.startswith("token="):
+                    cookie_token = item.split("=", 1)[1].strip()
+                    break
+
+        token = (
+            (auth.replace("Bearer ", "").strip() if auth else None)
+            or api_key_header
+            or cookie_token
+            or None
+        )
         resolved_id = None
 
         # 1. Check if token is a machine API key (starts with 'em_live_')
         if token and token.startswith("em_live_"):
             resolved_id = await get_project_id_by_api_key(token)
 
-        # 2. Check if token is a user JWT (from NextAuth / Google OAuth)
+        # 2. Check if token is a user JWT (from Google OAuth session)
         elif token:
             try:
                 payload = jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
                 user_id = payload.get("sub") or payload.get("userId")
                 target_project = project_header or payload.get("projectId") or payload.get("project_id")
 
-                if user_id and target_project:
-                    is_authorized = await verify_project_ownership(user_id, target_project)
-                    if not is_authorized:
-                        response = JSONResponse(
-                            status_code=status.HTTP_403_FORBIDDEN,
-                            content={
-                                "error": "Forbidden",
-                                "message": f"Access denied: User does not own or have access to project '{target_project}'.",
-                            },
-                        )
-                        await response(scope, receive, send)
-                        return
-                    resolved_id = target_project
+                if user_id:
+                    if target_project:
+                        is_authorized = await verify_project_ownership(user_id, target_project)
+                        if not is_authorized:
+                            response = JSONResponse(
+                                status_code=status.HTTP_403_FORBIDDEN,
+                                content={
+                                    "error": "Forbidden",
+                                    "message": f"Access denied: User does not own or have access to project '{target_project}'.",
+                                },
+                            )
+                            await response(scope, receive, send)
+                            return
+                        resolved_id = target_project
+                    else:
+                        resolved_id = await get_user_default_project_id(user_id)
             except JWTError:
                 pass
 
