@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../prisma.js';
 import { generateApiKey } from './projects.js';
+import { extractToken } from '../middleware/auth.js';
 
 const JWT_SECRET =
   process.env.JWT_SECRET ||
@@ -24,6 +25,8 @@ export async function initiateGoogleAuth(req: Request, res: Response) {
       process.env.GOOGLE_CALLBACK_URL?.trim() ||
       `${req.protocol}://${req.get('host')}/api/v1/auth/google/callback`;
 
+    console.log(`ℹ️ [Google OAuth] Redirecting to Google with redirect_uri: ${redirectUri}`);
+
     const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth';
     const params = new URLSearchParams({
       client_id: clientId,
@@ -31,7 +34,7 @@ export async function initiateGoogleAuth(req: Request, res: Response) {
       response_type: 'code',
       scope: 'openid email profile',
       access_type: 'offline',
-      prompt: 'consent',
+      prompt: 'select_account',
     });
 
     return res.redirect(`${rootUrl}?${params.toString()}`);
@@ -198,16 +201,25 @@ export async function handleGoogleCallback(req: Request, res: Response) {
 
 /**
  * GET /api/v1/auth/me
- * Returns current authenticated user profile
+ * Returns current authenticated user profile.
+ * Strictly requires a real signed JWT session cookie and never falls back to mock users.
  */
 export async function getAuthMe(req: Request, res: Response) {
   try {
-    if (!req.user?.id) {
-      return res.status(401).json({ error: 'Unauthorized' });
+    const token = extractToken(req);
+    if (!token) {
+      return res.status(401).json({ user: null, error: 'Unauthorized' });
+    }
+
+    let decoded: { userId: string; email: string };
+    try {
+      decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string };
+    } catch {
+      return res.status(401).json({ user: null, error: 'Invalid or expired session cookie' });
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
+      where: { id: decoded.userId },
       select: {
         id: true,
         email: true,
@@ -218,19 +230,19 @@ export async function getAuthMe(req: Request, res: Response) {
     });
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(401).json({ user: null, error: 'User not found' });
     }
 
     return res.json({ user });
   } catch (error) {
     console.error('Error in getAuthMe:', error);
-    return res.status(500).json({ error: 'Failed to fetch user profile' });
+    return res.status(500).json({ user: null, error: 'Failed to fetch user profile' });
   }
 }
 
 /**
  * POST /api/v1/auth/logout
- * Clears HttpOnly session cookie
+ * Clears HttpOnly session cookie and demo session markers
  */
 export async function handleLogout(req: Request, res: Response) {
   res.clearCookie('token', {
@@ -239,6 +251,7 @@ export async function handleLogout(req: Request, res: Response) {
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     path: '/',
   });
+  res.clearCookie('easymetrics_is_demo', { path: '/' });
 
   return res.json({ success: true, message: 'Logged out successfully' });
 }

@@ -54,5 +54,5 @@ apiRouter.delete('/projects/api-keys/:id', requireAuth, deleteApiKey);
 // ============================================================================
 apiRouter.get('/auth/google', initiateGoogleAuth);
 apiRouter.get('/auth/google/callback', handleGoogleCallback);
-apiRouter.get('/auth/me', requireAuth, getAuthMe);
+apiRouter.get('/auth/me', getAuthMe);
 apiRouter.post('/auth/logout', handleLogout);

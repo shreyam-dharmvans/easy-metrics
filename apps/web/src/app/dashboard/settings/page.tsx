@@ -44,6 +44,7 @@ function SettingsContent() {
     projects,
     currentProject,
     isDemo,
+    user,
     switchProject,
     createProject,
     renameProject,
@@ -269,9 +270,19 @@ function SettingsContent() {
   };
 
   // Sign out
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+    const apiUrl = rawApiUrl.endsWith('/api/v1') ? rawApiUrl : `${rawApiUrl}/api/v1`;
+    try {
+      await fetch(`${apiUrl}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (err) {
+      console.error('Failed to logout from API:', err);
+    }
     clearAllEasyMetricsStorage();
-    router.push('/');
+    window.location.href = '/';
   };
 
   const activeApiKeyStr = isDemo ? 'em_live_••••••••••••••••••••••••••••' : (apiKeys.length > 0 ? apiKeys[0].key : 'em_live_your_api_key_here');
@@ -1130,15 +1141,31 @@ init({
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                DE
-              </div>
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name || user.email}
+                  className="w-9 h-9 rounded-full object-cover shadow-xs border border-zinc-200 dark:border-zinc-700"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                  {user?.name
+                    ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+                    : (user?.email ? user.email.slice(0, 2).toUpperCase() : 'DE')}
+                </div>
+              )}
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-zinc-950 dark:text-white">Developer Session</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 font-medium">Local</span>
+                  <span className="text-xs font-bold text-zinc-950 dark:text-white">
+                    {user?.name || 'Developer Session'}
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-medium">
+                    {user ? 'Google Account' : 'Local'}
+                  </span>
                 </div>
-                <div className="text-[11px] font-mono text-zinc-500">developer@easymetrics.local</div>
+                <div className="text-[11px] font-mono text-zinc-500">
+                  {user?.email || 'developer@easymetrics.local'}
+                </div>
               </div>
             </div>
           )}

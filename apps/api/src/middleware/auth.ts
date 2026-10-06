@@ -93,7 +93,7 @@ export async function requireApiKey(req: Request, res: Response, next: NextFunct
  * Extracts the user session JWT from the incoming HttpOnly Cookie.
  * JavaScript cannot read this cookie in the browser, protecting against XSS token theft.
  */
-function extractToken(req: Request): string | null {
+export function extractToken(req: Request): string | null {
   const cookieHeader = req.headers.cookie;
   if (!cookieHeader) return null;
 

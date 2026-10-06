@@ -24,28 +24,9 @@ interface UserProfile {
 
 export function UserMenu() {
   const router = useRouter();
-  const { currentProject, isDemo } = useProject();
+  const { currentProject, isDemo, user } = useProject();
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState<UserProfile | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  // Fetch current user profile on mount
-  useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-    fetch(`${apiUrl}/api/v1/auth/me`, { credentials: 'include' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.user) {
-          setUser(data.user);
-          if (typeof window !== 'undefined' && data.user.id) {
-            localStorage.setItem('easymetrics_user_id', data.user.id);
-          }
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to load user profile in UserMenu:', err);
-      });
-  }, [isDemo]);
 
   // Close user dropdown when clicking outside
   useEffect(() => {
@@ -59,9 +40,10 @@ export function UserMenu() {
   }, []);
 
   const handleSignOut = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+    const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+    const apiUrl = rawApiUrl.endsWith('/api/v1') ? rawApiUrl : `${rawApiUrl}/api/v1`;
     try {
-      await fetch(`${apiUrl}/api/v1/auth/logout`, {
+      await fetch(`${apiUrl}/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
@@ -70,10 +52,10 @@ export function UserMenu() {
     }
     clearAllEasyMetricsStorage();
     setIsOpen(false);
-    router.push('/');
+    window.location.href = '/';
   };
 
-  const displayName = isDemo ? 'Demo Visitor' : (user?.name || 'Developer');
+  const displayName = isDemo ? 'Demo Visitor' : (user?.name || user?.email?.split('@')[0] || 'Developer');
   const displayEmail = isDemo ? 'demo.guest@easymetrics.local' : (user?.email || 'developer@easymetrics.local');
   const initials = isDemo
     ? 'DM'

@@ -318,10 +318,14 @@ docker compose -f docker-compose.prod.yml up -d --build
 | `CORS_ORIGIN` | Optional | `http://localhost:3000` | Allowed frontend origin for browser fetch requests. |
 | `AGENT_PORT` | Optional | `8000` | Port for the FastAPI AI Agent & FastMCP service. |
 | `GROQ_API_KEY` | **Required** (for AI) | `gsk_...` | Required for the AI Copilot and FastMCP features. Get a free key at [console.groq.com](https://console.groq.com). |
-| `GROQ_MODEL` | Optional | `llama-3.3-70b-versatile` | LLM model used for root-cause analysis. |
+| `GROQ_MODEL` | Optional | `openai/gpt-oss-120b` | LLM model used for root-cause analysis. |
 | `DEMO_PORT` | Optional | `5000` | Port for the local Express testing demo app. |
 | `GOOGLE_CLIENT_ID` | Optional | `...` | Google OAuth Client ID (in local dev, falls back automatically to demo mode). |
 | `GOOGLE_CLIENT_SECRET`| Optional | `...` | Google OAuth Client Secret. |
+| `GOOGLE_CALLBACK_URL` | Optional | `http://localhost:4000/api/v1/auth/google/callback` | Callback URI registered in Google Cloud Console. |
+
+> [!NOTE]
+> **Google OAuth Setup**: In your [Google Cloud Console](https://console.cloud.google.com/apis/credentials), you must add `http://localhost:4000/api/v1/auth/google/callback` under **Authorized redirect URIs** (and `http://localhost:3000` under **Authorized JavaScript origins**).
 
 ---
 

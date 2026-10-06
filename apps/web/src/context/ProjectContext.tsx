@@ -18,11 +18,20 @@ export interface ProjectItem {
   _count?: { apiKeys: number; traces: number };
 }
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  name?: string | null;
+  avatar?: string | null;
+}
+
 interface ProjectContextType {
   projects: ProjectItem[];
   currentProject: ProjectItem;
   isLoading: boolean;
   isDemo: boolean;
+  user: UserProfile | null;
+  refreshUser: () => Promise<void>;
   switchProject: (projectId: string) => void;
   refreshProjects: () => Promise<void>;
   createProject: (name: string) => Promise<{ project: ProjectItem; apiKey: any }>;
@@ -128,13 +137,36 @@ export function initiateGoogleSignIn() {
   window.location.href = authUrl;
 }
 
-function DemoRouteWatcher({ onSync }: { onSync: () => void }) {
+function DemoRouteWatcher({
+  onSync,
+  user,
+  isAuthLoading,
+  isDemo,
+}: {
+  onSync: () => void;
+  user: UserProfile | null;
+  isAuthLoading: boolean;
+  isDemo: boolean;
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
     onSync();
   }, [pathname, searchParams, onSync]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (isAuthLoading) return;
+
+    // Strict guard: If on a dashboard route, but user is NOT authenticated and NOT in demo mode, redirect to landing
+    if (pathname?.startsWith('/dashboard')) {
+      const isDemoActive = isDemo || checkIsDemoMode();
+      if (!isDemoActive && !user) {
+        window.location.href = '/';
+      }
+    }
+  }, [pathname, user, isAuthLoading, isDemo]);
 
   return null;
 }
@@ -144,6 +176,32 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const [currentProject, setCurrentProject] = useState<ProjectItem>(DEFAULT_PROJECT);
   const [isLoading, setIsLoading] = useState(true);
   const [isDemo, setIsDemo] = useState(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  const refreshUser = useCallback(async () => {
+    try {
+      setIsAuthLoading(true);
+      const rawBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+      const apiUrl = rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`;
+      const res = await fetch(`${apiUrl}/auth/me`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.user) {
+          setUser(data.user);
+          if (typeof window !== 'undefined' && data.user.id) {
+            localStorage.setItem('easymetrics_user_id', data.user.id);
+          }
+          return;
+        }
+      }
+      setUser(null);
+    } catch {
+      setUser(null);
+    } finally {
+      setIsAuthLoading(false);
+    }
+  }, []);
 
   const refreshProjects = useCallback(async () => {
     try {
@@ -181,6 +239,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         const clean = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname;
         window.history.replaceState(null, '', clean);
         refreshProjects();
+        refreshUser();
         return;
       }
     }
@@ -189,7 +248,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     if (active) {
       setDemoModeStorage(true);
     }
-  }, [refreshProjects]);
+  }, [refreshProjects, refreshUser]);
 
   useEffect(() => {
     syncDemoState();
@@ -200,6 +259,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('storage', syncDemoState);
     };
   }, [syncDemoState]);
+
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
 
   useEffect(() => {
     refreshProjects();
@@ -290,6 +353,8 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
         currentProject,
         isLoading,
         isDemo,
+        user,
+        refreshUser,
         switchProject,
         refreshProjects,
         createProject,
@@ -298,7 +363,12 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       <Suspense fallback={null}>
-        <DemoRouteWatcher onSync={syncDemoState} />
+        <DemoRouteWatcher
+          onSync={syncDemoState}
+          user={user}
+          isAuthLoading={isAuthLoading}
+          isDemo={isDemo}
+        />
       </Suspense>
       {children}
     </ProjectContext.Provider>
