@@ -29,8 +29,22 @@ describe('Domain: System Health & Authentication Flow', () => {
     expect(res.header.location).toBe('/api/v1/auth/google/callback?dev=true');
   });
 
-  it('GET /api/v1/auth/me returns developer profile in dev environment', async () => {
+  it('GET /api/v1/auth/me rejects unauthenticated requests with 401', async () => {
     const res = await request(app).get('/api/v1/auth/me');
+
+    expect(res.status).toBe(401);
+    expect(res.body).toHaveProperty('user', null);
+  });
+
+  it('GET /api/v1/auth/me returns developer profile when authenticated with session cookie', async () => {
+    // 1. Authenticate via dev callback
+    const callbackRes = await request(app).get('/api/v1/auth/google/callback?dev=true');
+    expect(callbackRes.status).toBe(302);
+    const sessionCookie = callbackRes.header['set-cookie'];
+    expect(sessionCookie).toBeDefined();
+
+    // 2. Fetch /api/v1/auth/me with session cookie
+    const res = await request(app).get('/api/v1/auth/me').set('Cookie', sessionCookie);
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('user');
