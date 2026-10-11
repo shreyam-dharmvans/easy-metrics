@@ -75,4 +75,36 @@ describe('Domain: System Health & Authentication Flow', () => {
       process.env.NODE_ENV = originalEnv;
     }
   });
+
+  it('allows read-only GET requests for demo visitors in production', async () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    try {
+      const res = await request(app)
+        .get('/api/v1/projects')
+        .set('x-easymetrics-demo', 'true');
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      expect(res.body.length).toBeGreaterThan(0);
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+    }
+  });
+
+  it('blocks modification requests for demo visitors with 403 in production', async () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+
+    try {
+      const res = await request(app)
+        .post('/api/v1/projects')
+        .set('x-easymetrics-demo', 'true')
+        .send({ name: 'Hacker Project' });
+      expect(res.status).toBe(403);
+      expect(res.body.error).toBe('Forbidden');
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+    }
+  });
 });

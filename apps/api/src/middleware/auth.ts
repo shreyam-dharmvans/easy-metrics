@@ -167,20 +167,54 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     }
   }
 
-  // 2. Production Guard: In production, strictly reject any request without a valid session cookie
+  // 2. STRICT READ-ONLY ISOLATION FOR DEMO / GUEST VISITORS:
+  // Anonymous guest visitors testing demo mode are strictly allowed read-only access to demo telemetry
+  if (isDemoVisitor) {
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      return res.status(403).json({
+        error: 'Forbidden',
+        message: 'Modifications (creating/deleting projects or API keys) are disabled in Demo Mode. Please sign in with Google.',
+      });
+    }
+
+    try {
+      const demoUser = await prisma.user.findUnique({
+        where: { email: 'developer@easymetrics.local' },
+        include: {
+          projects: true,
+        },
+      });
+
+      if (demoUser && demoUser.projects.length > 0) {
+        req.user = { id: demoUser.id, email: demoUser.email };
+
+        const requestedProjectId = (req.query.projectId as string) || (req.headers['x-project-id'] as string);
+        if (requestedProjectId) {
+          const targetProject = demoUser.projects.find((p) => p.id === requestedProjectId);
+          if (targetProject) {
+            req.project = { id: targetProject.id };
+            return next();
+          }
+        }
+
+        req.project = { id: demoUser.projects[0].id };
+        return next();
+      }
+
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Default demo user or project not found.',
+      });
+    } catch (error) {
+      return res.status(500).json({ error: 'Failed to resolve developer session' });
+    }
+  }
+
+  // 3. Production Guard: In production, strictly reject any request without a valid session cookie
   if (process.env.NODE_ENV === 'production') {
     return res.status(401).json({
       error: 'Unauthorized',
       message: 'Authentication required. Please sign in.',
-    });
-  }
-
-  // 3. STRICT READ-ONLY ISOLATION FOR DEMO / GUEST VISITORS:
-  // Anonymous guest visitors testing demo mode are strictly blocked from modifications!
-  if (isDemoVisitor && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
-    return res.status(403).json({
-      error: 'Forbidden',
-      message: 'Modifications (creating/deleting projects or API keys) are disabled in Demo Mode. Please sign in with Google.',
     });
   }
 
