@@ -23,9 +23,9 @@ RUN npm ci
 # Copy web application source code
 COPY apps/web ./apps/web
 
-# Set production build-time arguments (can be overridden during build)
-ARG NEXT_PUBLIC_API_URL="http://localhost:4000"
-ARG NEXT_PUBLIC_AGENT_URL="http://localhost:8000"
+# Set production build-time arguments (optional; if empty, resolves dynamically in browser)
+ARG NEXT_PUBLIC_API_URL=""
+ARG NEXT_PUBLIC_AGENT_URL=""
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_AGENT_URL=$NEXT_PUBLIC_AGENT_URL
 ENV NEXT_TELEMETRY_DISABLED=1

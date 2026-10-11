@@ -8,6 +8,7 @@ import {
   renameProjectApi,
   deleteProjectApi,
 } from '../lib/api';
+import { getApiBaseUrl } from '../lib/config';
 
 export interface ProjectItem {
   id: string;
@@ -132,7 +133,7 @@ export function clearAllEasyMetricsStorage() {
  */
 export function initiateGoogleSignIn() {
   clearAllEasyMetricsStorage();
-  const rawBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+  const rawBase = getApiBaseUrl();
   const authUrl = `${rawBase}/api/v1/auth/google`;
   window.location.href = authUrl;
 }
@@ -182,7 +183,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   const refreshUser = useCallback(async () => {
     try {
       setIsAuthLoading(true);
-      const rawBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+      const rawBase = getApiBaseUrl();
       const apiUrl = rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`;
       const res = await fetch(`${apiUrl}/auth/me`, { credentials: 'include' });
       if (res.ok) {

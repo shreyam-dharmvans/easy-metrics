@@ -34,6 +34,7 @@ import {
   createApiKeyApi,
   deleteApiKeyApi,
 } from '../../../lib/api';
+import { getApiBaseUrl, getAgentBaseUrl } from '../../../lib/config';
 
 function SettingsContent() {
   const router = useRouter();
@@ -271,7 +272,7 @@ function SettingsContent() {
 
   // Sign out
   const handleSignOut = async () => {
-    const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+    const rawApiUrl = getApiBaseUrl();
     const apiUrl = rawApiUrl.endsWith('/api/v1') ? rawApiUrl : `${rawApiUrl}/api/v1`;
     try {
       await fetch(`${apiUrl}/auth/logout`, {
@@ -300,7 +301,7 @@ init({
 
 // Your existing Express, database, and HTTP code runs untouched!`;
 
-  const agentUrl = (process.env.NEXT_PUBLIC_AGENT_URL || 'http://localhost:8000').replace(/\/+$/, '');
+  const agentUrl = getAgentBaseUrl();
   const mcpSseUrl = `${agentUrl}/mcp/sse`;
 
   const mcpConfigCode = JSON.stringify(

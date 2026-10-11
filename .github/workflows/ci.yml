@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: CI/CD Pipeline
 
 on:
   push:
@@ -76,3 +76,61 @@ jobs:
       - name: Run Pytest Test Suite (AI Agent)
         working-directory: services/ai-agent
         run: python -m pytest tests/
+
+  cd:
+    name: Build & Publish to GHCR
+    needs: [ci]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lowercase Repository Owner for GHCR
+        id: repo_meta
+        run: |
+          echo "owner_lc=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - name: Build & Push API Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.repo_meta.outputs.owner_lc }}/easy-metrics-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push AI Agent Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/ai-agent/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.repo_meta.outputs.owner_lc }}/easy-metrics-ai-agent:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push Web Dashboard Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: ghcr.io/${{ steps.repo_meta.outputs.owner_lc }}/easy-metrics-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

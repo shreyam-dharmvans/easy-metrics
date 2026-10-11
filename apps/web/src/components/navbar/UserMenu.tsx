@@ -13,6 +13,7 @@ import {
   Sparkles,
   Bot,
 } from 'lucide-react';
+import { getApiBaseUrl } from '../../lib/config';
 import { useProject, clearAllEasyMetricsStorage } from '../../context/ProjectContext';
 
 interface UserProfile {
@@ -40,7 +41,7 @@ export function UserMenu() {
   }, []);
 
   const handleSignOut = async () => {
-    const rawApiUrl = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+    const rawApiUrl = getApiBaseUrl();
     const apiUrl = rawApiUrl.endsWith('/api/v1') ? rawApiUrl : `${rawApiUrl}/api/v1`;
     try {
       await fetch(`${apiUrl}/auth/logout`, {

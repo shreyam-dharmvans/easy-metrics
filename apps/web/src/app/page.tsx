@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { initiateGoogleSignIn } from '../context/ProjectContext';
+import { getApiBaseUrl } from '../lib/config';
 
 interface AuthUser {
   id: string;
@@ -18,7 +19,7 @@ export default function LandingPage() {
 
   // Check if user already has an active session
   useEffect(() => {
-    const rawBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+    const rawBase = getApiBaseUrl();
     const apiUrl = rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`;
     fetch(`${apiUrl}/auth/me`, { credentials: 'include' })
       .then((res) => (res.ok ? res.json() : null))

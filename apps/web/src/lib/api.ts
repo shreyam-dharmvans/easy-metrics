@@ -1,10 +1,10 @@
 import { OverviewMetrics, RouteMetric, Trace, Span } from '../types';
-
-const rawBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
-const API_BASE_URL = rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`;
+import { getApiBaseUrl } from './config';
 
 async function fetchWithAuth<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const rawBase = getApiBaseUrl();
+  const apiBase = rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`;
+  const url = `${apiBase}${endpoint}`;
   const isDemo =
     typeof window !== 'undefined' &&
     (sessionStorage.getItem('easymetrics_is_demo') === 'true' ||

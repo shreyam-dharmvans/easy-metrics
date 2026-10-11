@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { ChatMessage, ToolExecution, AiStreamEvent } from '../types/ai';
+import { getAgentBaseUrl } from '../lib/config';
 
 export interface ActiveTraceContext {
   traceId?: string;
@@ -64,7 +65,7 @@ Ask me anything or try one of these quick diagnostics:
 };
 
 const SESSION_ACTIVE_KEY = 'easymetrics_session_alive';
-const AGENT_BASE_URL = process.env.NEXT_PUBLIC_AGENT_URL || 'http://localhost:8000';
+const getAgentBase = () => getAgentBaseUrl();
 
 function getInitialUserId(): string {
   if (typeof window === 'undefined') return 'cmu7z3qjx0000m3ccex2925ts';
@@ -199,7 +200,7 @@ export function AiChatProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.setItem(SESSION_ACTIVE_KEY, 'true');
 
       // 2. Clear leftover Postgres checkpoints for this user thread from past sessions
-      fetch(`${AGENT_BASE_URL}/api/chat/threads/${encodeURIComponent(currentThreadId)}`, {
+      fetch(`${getAgentBase()}/api/chat/threads/${encodeURIComponent(currentThreadId)}`, {
         method: 'DELETE',
       }).catch((err) => console.warn('Could not reset thread on session start:', err));
 
@@ -208,7 +209,7 @@ export function AiChatProvider({ children }: { children: React.ReactNode }) {
     } else {
       // Session was already active: this is a page refresh!
       // Retrieve conversational history directly from PostgreSQL checkpointer
-      fetch(`${AGENT_BASE_URL}/api/chat/threads/${encodeURIComponent(currentThreadId)}`)
+      fetch(`${getAgentBase()}/api/chat/threads/${encodeURIComponent(currentThreadId)}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
@@ -231,7 +232,7 @@ export function AiChatProvider({ children }: { children: React.ReactNode }) {
 
     // Purge PostgreSQL checkpoints for this user thread
     try {
-      await fetch(`${AGENT_BASE_URL}/api/chat/threads/${encodeURIComponent(threadId)}`, {
+      await fetch(`${getAgentBase()}/api/chat/threads/${encodeURIComponent(threadId)}`, {
         method: 'DELETE',
       });
     } catch (err) {
@@ -320,7 +321,7 @@ export function AiChatProvider({ children }: { children: React.ReactNode }) {
 
         // Directly connect to FastAPI AI Agent SSE stream on port 8000
         const activeProjectId = typeof window !== 'undefined' ? localStorage.getItem('em_project_id') || '' : '';
-        const agentEndpoint = `${AGENT_BASE_URL}/api/chat/stream`;
+        const agentEndpoint = `${getAgentBase()}/api/chat/stream`;
 
         const response = await fetch(agentEndpoint, {
           method: 'POST',
