@@ -38,6 +38,9 @@ services:
       NODE_ENV: production
       JWT_SECRET: ${JWT_SECRET:-easymetrics-prod-jwt-secret-replace-in-production}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

@@ -8,6 +8,7 @@ from .tools import ALL_TOOLS
 from .context import set_current_project_id
 from .db import init_db_pool, close_db_pool, get_project_id_by_api_key, get_default_demo_project_id
 
+logging.basicConfig(stream=sys.stderr, level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("easymetrics.mcp")
 
 # Initialize FastMCP Server

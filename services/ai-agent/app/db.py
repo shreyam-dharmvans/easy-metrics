@@ -9,21 +9,35 @@ logger = logging.getLogger("easymetrics.db")
 _pool: Optional[asyncpg.Pool] = None
 
 
+import asyncio
+
 async def init_db_pool() -> asyncpg.Pool:
     """
     Initializes a persistent asyncpg connection pool to PostgreSQL.
-    Maintains min_size connections ready for instantaneous query execution.
+    Safely re-creates the pool if the event loop has changed or closed.
     """
     global _pool
-    if _pool is None:
-        logger.info("Initializing asyncpg connection pool...")
-        _pool = await asyncpg.create_pool(
-            dsn=settings.asyncpg_url,
-            min_size=2,
-            max_size=10,
-            command_timeout=30,
-        )
-        logger.info("Database connection pool initialized successfully.")
+    try:
+        current_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        current_loop = None
+
+    if _pool is not None:
+        try:
+            if _pool._loop is not None and not _pool._loop.is_closed() and (_pool._loop == current_loop or current_loop is None):
+                return _pool
+        except Exception:
+            pass
+        _pool = None
+
+    logger.info("Initializing asyncpg connection pool...")
+    _pool = await asyncpg.create_pool(
+        dsn=settings.asyncpg_url,
+        min_size=2,
+        max_size=10,
+        command_timeout=30,
+    )
+    logger.info("Database connection pool initialized successfully.")
     return _pool
 
 
