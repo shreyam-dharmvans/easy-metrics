@@ -1,19 +1,24 @@
 <div align="center">
 
-# ⚡ EasyMetrics
+<h1>⚡ EasyMetrics</h1>
 
-### See Exactly Which Database Query or API Call is Slowing Down Your Express Backend
+<h3>See Exactly Which Database Query or API Call is Slowing Down Your Express Backend</h3>
+
+**🌐 [https://easy-metrics.centralindia.cloudapp.azure.com](https://easy-metrics.centralindia.cloudapp.azure.com)**
 
 [![CI Status](https://img.shields.io/badge/CI-passing-brightgreen.svg)](https://github.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node: >=20](https://img.shields.io/badge/Node->=20.11.0-brightgreen.svg)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express.js-Supported-lightgrey.svg)](https://expressjs.com/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-easy--metrics-6366f1.svg)](https://easy-metrics.centralindia.cloudapp.azure.com/dashboard?demo=true)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-purple.svg)](CONTRIBUTING.md)
 
 <p align="center">
   EasyMetrics automatically tracks how long each internal part of your Express routes takes to execute—from database queries with multiple JOINs to third-party payment calls.<br/>
   It gives <b>you</b> a visual waterfall timeline for every request, and gives your <b>AI assistant (Cursor / Copilot / Claude)</b> the exact runtime performance data needed to fix slow endpoints without guessing.
 </p>
+
+[**🚀 Explore Live Demo (No sign up required) →**](https://easy-metrics.centralindia.cloudapp.azure.com/dashboard?demo=true)
 
 </div>
 
@@ -42,7 +47,7 @@ A single route doesn't do just one thing. It executes an entire chain of operati
 Now suppose a user complains that this checkout endpoint took **2.8 seconds** to respond.
 
 Even if you write logs to a file or watch your terminal, all your log tells you is:
-```
+```text
 POST /api/orders/checkout - 200 OK (2840ms)
 ```
 
@@ -106,7 +111,7 @@ flowchart TD
 
 Instead of guessing or adding console timers, you click on any slow request in the EasyMetrics dashboard and see a clear visual timeline:
 
-```
+```text
 POST /api/orders/checkout (Total: 2,840ms)
 ├── 1. Auth Middleware ..................................... [12ms]   ✅
 ├── 2. SELECT * FROM orders JOIN items ... (DB Query) ...... [2,480ms] ❌ (Bottleneck: Missing index)
@@ -133,7 +138,13 @@ EasyMetrics gives your AI the runtime execution data it needs so it stops guessi
 You do **not** need to set up Docker, manage databases, or configure complex infrastructure. The platform is managed—you simply install the npm package in your application.
 
 ### Step 1: Get your API Key
-Log in to the EasyMetrics dashboard and copy your **Project API Key** (`em_live_...`).
+1. Go to [EasyMetrics](https://easy-metrics.centralindia.cloudapp.azure.com) and sign in with Google.
+2. Navigate to **Settings &rarr; API Keys**.
+3. Copy your **Project API Key** (`em_live_...`) and add it to your `.env` file:
+
+   ```bash
+   EASY_METRICS_API_KEY="em_live_your_project_key"
+   ```
 
 ### Step 2: Install the Package
 In your Express project:
@@ -143,28 +154,39 @@ npm install @easy-metrics/node
 ```
 
 ### Step 3: Add 2 Lines of Code
-Add this at the **very top** of your application entry file (e.g. `server.ts` or `app.js`):
+
+> [!IMPORTANT]
+> **Put `initEasyMetrics()` at the very top of your entry file (e.g. `server.ts` or `app.js`)**:
+> EasyMetrics needs to run **before** you import `express`, database clients (`pg`, `prisma`, `mysql2`), or HTTP modules. This allows it to automatically intercept and measure your network and database calls from the start without any manual code changes.
 
 ```typescript
 import { initEasyMetrics } from '@easy-metrics/node';
 
-// Initialize before importing express or database drivers
+// 1. Initialize at the very top (before importing express or database drivers)
 initEasyMetrics({
-  serviceName: 'my-express-api',
   apiKey: process.env.EASY_METRICS_API_KEY, // 'em_live_your_project_key'
 });
 
+// 2. Import Express and your routes AFTER init
 import express from 'express';
 const app = express();
-// ... rest of your normal application code
+
+app.get('/api/users', (req, res) => {
+  res.json({ users: ['Alice', 'Bob'] });
+});
+
+app.listen(3000, () => console.log('Server running on port 3000'));
 ```
 
-> **Prefer zero code changes?** Preload the package directly via the Node CLI:
+> **Don't want to change any code? (CLI Preload)**
+> You don't even need to add `initEasyMetrics()` to your files. Just start your server using this command instead of your normal `node server.js`:
 > ```bash
-> node --import @easy-metrics/node/register server.js
+> EASY_METRICS_API_KEY="em_live_your_project_key" node --import @easy-metrics/node/register server.js
 > ```
 
-That's it. Make requests to your Express app, and live response times, database query durations, and execution waterfalls will immediately appear on your dashboard.
+> 💡 **Want to see when data is sent?** Pass `debug: true` (or set `EASY_METRICS_DEBUG=true` in your `.env`) to print a confirmation log in your terminal whenever telemetry is sent to EasyMetrics, so you know it's ready to view on your dashboard.
+
+That's it. Make requests to your Express app, and live response times, database query durations, and execution waterfalls will immediately appear on your dashboard!
 
 ---
 
@@ -178,7 +200,7 @@ Connect **Cursor** directly to EasyMetrics so your AI can inspect live execution
    {
      "mcpServers": {
        "easymetrics": {
-         "url": "https://api.easymetrics.dev/mcp/sse",
+         "url": "https://easy-metrics.centralindia.cloudapp.azure.com/mcp",
          "headers": {
            "x-api-key": "em_live_your_project_key"
          }
@@ -230,6 +252,13 @@ If you want to:
 * Submit a pull request or add a feature
 
 👉 **Read our [CONTRIBUTING.md](CONTRIBUTING.md) guide for full developer setup instructions!**
+
+---
+
+## 🌐 Links
+
+- **EasyMetrics Platform**: [https://easy-metrics.centralindia.cloudapp.azure.com](https://easy-metrics.centralindia.cloudapp.azure.com)
+- **Live Demo (No sign up required)**: [https://easy-metrics.centralindia.cloudapp.azure.com/dashboard?demo=true](https://easy-metrics.centralindia.cloudapp.azure.com/dashboard?demo=true)
 
 ---
 

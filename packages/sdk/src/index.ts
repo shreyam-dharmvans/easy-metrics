@@ -32,7 +32,7 @@ export function init(config?: EasyMetricsConfig): void {
   const endpoint =
     config?.endpoint ||
     process.env.EASY_METRICS_ENDPOINT ||
-    'http://localhost:4000/api/v1/telemetry/ingest';
+    'https://easy-metrics.centralindia.cloudapp.azure.com/api/v1/telemetry/ingest';
   const serviceName =
     config?.serviceName ||
     process.env.SERVICE_NAME ||
