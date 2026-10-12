@@ -1,7 +1,13 @@
 {
   "name": "@easy-metrics/node",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Zero-config OpenTelemetry observability SDK for Node.js",
+  "homepage": "https://easy-metrics.centralindia.cloudapp.azure.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shreyam-dharmvans/easy-metrics.git",
+    "directory": "packages/sdk"
+  },
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
