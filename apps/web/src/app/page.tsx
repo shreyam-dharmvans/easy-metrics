@@ -502,10 +502,10 @@ const app = express();`;
             <Link href="/dashboard?demo=true" className="hover:text-zinc-900 dark:hover:text-white">
               Live Demo
             </Link>
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="hover:text-zinc-900 dark:hover:text-white">
+            <a href="https://github.com/shreyam-dharmvans/easy-metrics" target="_blank" rel="noreferrer" className="hover:text-zinc-900 dark:hover:text-white">
               GitHub
             </a>
-            <span className="text-zinc-400">v0.1.0-alpha</span>
+            <span className="text-zinc-400">v0.1.0</span>
           </div>
         </div>
       </footer>

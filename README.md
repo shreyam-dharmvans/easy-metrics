@@ -6,7 +6,7 @@
 
 **🌐 [https://easy-metrics.centralindia.cloudapp.azure.com](https://easy-metrics.centralindia.cloudapp.azure.com)**
 
-[![CI Status](https://img.shields.io/badge/CI-passing-brightgreen.svg)](https://github.com)
+[![CI Status](https://img.shields.io/badge/CI-passing-brightgreen.svg)](https://github.com/shreyam-dharmvans/easy-metrics)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node: >=20](https://img.shields.io/badge/Node->=20.11.0-brightgreen.svg)](https://nodejs.org/)
 [![Express.js](https://img.shields.io/badge/Express.js-Supported-lightgrey.svg)](https://expressjs.com/)
