@@ -96,13 +96,23 @@ This creates a painful, repetitive cycle:
 
 EasyMetrics gives you complete runtime clarity without modifying your business logic or adding temporary console statements:
 
-```mermaid
-flowchart TD
-    App["Your Express Backend"] -- "2 lines of code\n(Auto-tracks HTTP & DB timings)" --> EasyMetrics["EasyMetrics Platform"]
-    
-    EasyMetrics --> Human["1. FOR YOU\n• See all Express routes ranked by speed\n• Click any request to view its visual waterfall\n• Identify the exact slow query or API call in seconds"]
-    
-    EasyMetrics --> AI["2. FOR YOUR AI (Cursor / Claude)\n• 1-Click Copy structured execution context\n• Or connect Cursor via FastMCP server\n• AI reads live runtime timings and writes verified fixes"]
+```text
+┌────────────────────────────────────────────────────────┐
+│                  Your Express Backend                  │
+└───────────────────────────┬────────────────────────────┘
+                            │ (2 lines of code: auto-tracks HTTP & DB)
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│                  EasyMetrics Platform                  │
+└─────────────┬────────────────────────────┬─────────────┘
+              │                            │
+              ▼                            ▼
+┌───────────────────────────┐┌───────────────────────────┐
+│       1. FOR YOU          ││     2. FOR YOUR AI        │
+│ • Endpoints ranked by ms  ││ • 1-Click Copy context   │
+│ • Visual waterfall traces ││ • Direct Cursor via MCP   │
+│ • Find bottlenecks in sec ││ • Fixes queries & code   │
+└───────────────────────────┘└───────────────────────────┘
 ```
 
 ---

@@ -1,6 +1,6 @@
 {
   "name": "@easy-metrics/node",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Zero-config OpenTelemetry observability SDK for Node.js",
   "main": "dist/index.js",
   "module": "dist/index.js",
