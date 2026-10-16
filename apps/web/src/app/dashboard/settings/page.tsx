@@ -288,18 +288,17 @@ function SettingsContent() {
 
   const activeApiKeyStr = isDemo ? 'em_live_••••••••••••••••••••••••••••' : (apiKeys.length > 0 ? apiKeys[0].key : 'em_live_your_api_key_here');
 
-  const snippetCode = `// 1. Install SDK in your Node.js application
+  const snippetCode = `# 1. Install SDK in your Node.js application
 npm install @easy-metrics/node
 
-// 2. Initialize at the VERY TOP of your entrypoint (server.js / index.ts)
-import { init } from '@easy-metrics/node';
+# 2. Add your project API key to .env
+EASY_METRICS_API_KEY="${activeApiKeyStr}"
 
-init({
-  apiKey: process.env.EASY_METRICS_KEY || '${activeApiKeyStr}',
-  serviceName: '${currentProject?.slug || 'my-node-service'}',
-});
+# 3. Start your server with --import instead of plain node server.js:
+node --import @easy-metrics/node/register server.js
 
-// Your existing Express, database, and HTTP code runs untouched!`;
+# Or with nodemon in development:
+# nodemon --import @easy-metrics/node/register server.js`;
 
   const agentUrl = getAgentBaseUrl();
   const mcpSseUrl = `${agentUrl}/mcp/sse`;
@@ -767,7 +766,7 @@ init({
                     <span className="w-3 h-3 rounded-full bg-amber-500/80" />
                     <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
                   </div>
-                  <span className="text-xs font-mono text-zinc-400 ml-2">Node.js · Express · HTTP</span>
+                  <span className="text-xs font-mono text-zinc-400 ml-2">Node.js · Express · Zero Code Changes</span>
                 </div>
 
                 <button
@@ -803,8 +802,8 @@ init({
                 <div className="w-6 h-6 rounded-lg bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold text-xs flex items-center justify-center">
                   2
                 </div>
-                <div className="font-bold text-xs text-zinc-950 dark:text-white">Initialize at Root</div>
-                <div className="text-[11px] text-zinc-500">Call init() before any other imports so Express routes and HTTP calls are instrumented.</div>
+                <div className="font-bold text-xs text-zinc-950 dark:text-white">Run with --import</div>
+                <div className="text-[11px] text-zinc-500">Instead of plain node server.js, run node --import @easy-metrics/node/register server.js.</div>
               </div>
 
               <div className="p-4 rounded-xl border border-zinc-200/90 dark:border-zinc-800/90 bg-white dark:bg-zinc-900 space-y-1.5">

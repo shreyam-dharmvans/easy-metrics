@@ -6,6 +6,9 @@ import dotenv from 'dotenv';
 import { EasyMetricsConfig } from './types.js';
 import { EasyMetricsSpanExporter } from './exporter.js';
 
+// Automatically load .env immediately if present (idempotent, safe across CJS and ESM)
+dotenv.config();
+
 export * from './types.js';
 export { EasyMetricsSpanExporter };
 
@@ -23,22 +26,29 @@ export function init(config?: EasyMetricsConfig): void {
     return;
   }
 
-  // Automatically load .env if not yet loaded (solves ESM import hoisting)
-  if (!process.env.EASY_METRICS_API_KEY && !config?.apiKey) {
-    dotenv.config();
-  }
+  const apiKey =
+    config?.apiKey ||
+    process.env.EASY_METRICS_API_KEY ||
+    process.env.EASYMETRICS_API_KEY;
 
-  const apiKey = config?.apiKey || process.env.EASY_METRICS_API_KEY;
   const endpoint =
     config?.endpoint ||
     process.env.EASY_METRICS_ENDPOINT ||
+    process.env.EASYMETRICS_ENDPOINT ||
     'https://easy-metrics.centralindia.cloudapp.azure.com/api/v1/telemetry/ingest';
+
   const serviceName =
     config?.serviceName ||
+    process.env.EASY_METRICS_SERVICE_NAME ||
+    process.env.EASYMETRICS_SERVICE_NAME ||
     process.env.SERVICE_NAME ||
     process.env.npm_package_name ||
     'node-service';
-  const debug = config?.debug ?? process.env.EASY_METRICS_DEBUG === 'true';
+
+  const debug =
+    config?.debug ??
+    (process.env.EASY_METRICS_DEBUG === 'true' ||
+      process.env.EASYMETRICS_DEBUG === 'true');
 
   if (!apiKey) {
     console.warn(
@@ -100,4 +110,18 @@ export function init(config?: EasyMetricsConfig): void {
   process.once('SIGTERM', gracefulShutdown);
   process.once('SIGINT', gracefulShutdown);
 }
+
+/**
+ * Friendly named alias matching documentation
+ */
+export const initEasyMetrics = init;
+
+/**
+ * Default export allowing: import EasyMetrics from '@easy-metrics/node'
+ */
+export default {
+  init,
+  initEasyMetrics,
+  EasyMetricsSpanExporter,
+};
 

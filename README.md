@@ -98,7 +98,7 @@ EasyMetrics gives you complete runtime clarity without modifying your business l
 
 ```mermaid
 flowchart TD
-    App["Your Express Backend"] -- "2 lines of code\n(Auto-tracks HTTP & DB timings)" --> EasyMetrics["EasyMetrics Platform"]
+    App["Your Express Backend"] -- "Zero code changes\n(Auto-tracks HTTP & DB timings)" --> EasyMetrics["EasyMetrics Platform"]
     
     EasyMetrics --> Human["1. FOR YOU\n• See all Express routes ranked by speed\n• Click any request to view its visual waterfall\n• Identify the exact slow query or API call in seconds"]
     
@@ -153,40 +153,42 @@ In your Express project:
 npm install @easy-metrics/node
 ```
 
-### Step 3: Add 2 Lines of Code
+### Step 3: Run with Zero Code Changes
 
-> [!IMPORTANT]
-> **Put `initEasyMetrics()` at the very top of your entry file (e.g. `server.ts` or `app.js`)**:
-> EasyMetrics needs to run **before** you import `express`, database clients (`pg`, `prisma`, `mysql2`), or HTTP modules. This allows it to automatically intercept and measure your network and database calls from the start without any manual code changes.
+You do **not** need to touch or add any code to your JavaScript or TypeScript files. EasyMetrics automatically instruments Express, your database queries, and outgoing HTTP calls before your app boots.
 
-```typescript
-import { initEasyMetrics } from '@easy-metrics/node';
+Simply start your server with `--import @easy-metrics/node/register` instead of your normal startup command:
 
-// 1. Initialize at the very top (before importing express or database drivers)
-initEasyMetrics({
-  apiKey: process.env.EASY_METRICS_API_KEY, // 'em_live_your_project_key'
-});
+#### Option A: Run directly in terminal
 
-// 2. Import Express and your routes AFTER init
-import express from 'express';
-const app = express();
-
-app.get('/api/users', (req, res) => {
-  res.json({ users: ['Alice', 'Bob'] });
-});
-
-app.listen(3000, () => console.log('Server running on port 3000'));
+Instead of `node app.js`:
+```bash
+node --import @easy-metrics/node/register app.js
 ```
 
-> **Don't want to change any code? (CLI Preload)**
-> You don't even need to add `initEasyMetrics()` to your files. Just start your server using this command instead of your normal `node server.js`:
-> ```bash
-> EASY_METRICS_API_KEY="em_live_your_project_key" node --import @easy-metrics/node/register server.js
-> ```
+Instead of `nodemon app.js`:
+```bash
+nodemon --import @easy-metrics/node/register app.js
+```
 
-> 💡 **Want to see when data is sent?** Pass `debug: true` (or set `EASY_METRICS_DEBUG=true` in your `.env`) to print a confirmation log in your terminal whenever telemetry is sent to EasyMetrics, so you know it's ready to view on your dashboard.
+*(If using TypeScript: `tsx --import @easy-metrics/node/register server.ts`)*
 
-That's it. Make requests to your Express app, and live response times, database query durations, and execution waterfalls will immediately appear on your dashboard!
+#### Option B: Add to `package.json` (Recommended)
+
+Add the `--import` flag to your `scripts` in `package.json` so you never have to type it again:
+
+```json
+{
+  "scripts": {
+    "dev": "nodemon --import @easy-metrics/node/register app.js",
+    "start": "node --import @easy-metrics/node/register app.js"
+  }
+}
+```
+
+> 💡 **Want to see live confirmation in your terminal?** Set `EASY_METRICS_DEBUG=true` in your `.env` to print a confirmation log in your terminal whenever telemetry is sent to EasyMetrics.
+
+That's it! Start your app, make a few requests, and live latency waterfalls will immediately show up on your EasyMetrics dashboard.
 
 ---
 

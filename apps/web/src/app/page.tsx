@@ -87,13 +87,17 @@ export default function LandingPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const snippetCode = `// 1. Install package: npm install @easy-metrics/node
-import { init } from '@easy-metrics/node';
-init({ apiKey: process.env.EASY_METRICS_KEY }); // Tracks routes & database calls automatically
+  const snippetCode = `# 1. Install package
+npm install @easy-metrics/node
 
-// 2. Your existing Express app runs untouched:
-import express from 'express';
-const app = express();`;
+# 2. Add API key to .env
+EASY_METRICS_API_KEY="em_live_your_project_key"
+
+# 3. Start your server with --import instead of plain node server.js:
+node --import @easy-metrics/node/register server.js
+
+# Or with nodemon in development:
+# nodemon --import @easy-metrics/node/register server.js`;
 
   const copySnippet = () => {
     navigator.clipboard.writeText(snippetCode);
@@ -155,7 +159,7 @@ const app = express();`;
         {/* Pulsing Badge */}
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/70 mb-6 shadow-2xs">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Zero-Config Express Observability • 2 Lines of Code
+          Zero-Config Express Observability • Zero Code Changes
         </div>
 
         {/* Approved Headline */}
@@ -217,14 +221,14 @@ const app = express();`;
           )}
         </div>
 
-        {/* 2-Line Express Integration Code Snippet */}
+        {/* Zero-Code Express Integration Code Snippet */}
         <div className="max-w-xl mx-auto text-left rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/90 shadow-sm overflow-hidden mb-16">
           <div className="px-4 py-2 bg-zinc-100 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs font-mono text-zinc-500">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
               <span className="w-2.5 h-2.5 rounded-full bg-zinc-300 dark:bg-zinc-700"></span>
-              <span className="ml-2 font-semibold">src/server.js</span>
+              <span className="ml-2 font-semibold">Terminal / npm scripts (Zero Code Changes)</span>
             </div>
             <button
               onClick={copySnippet}
@@ -235,20 +239,16 @@ const app = express();`;
           </div>
           <pre className="p-4 font-mono text-xs overflow-x-auto text-zinc-900 dark:text-zinc-200 leading-relaxed bg-zinc-50/50 dark:bg-transparent">
             <code>
-              <span className="text-zinc-500">// 1. Install package: npm install @easy-metrics/node{'\n'}</span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-semibold">import</span>
-              <span> {'{ init } '}</span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-semibold">from</span>
-              <span className="text-amber-700 dark:text-amber-300"> '@easy-metrics/node'</span>;{'\n'}
-              <span>init({'{'} apiKey: process.env.EASY_METRICS_KEY {'}'}); </span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">// Tracks routes &amp; database calls automatically{'\n\n'}</span>
-              <span className="text-zinc-400">// 2. Your existing Express app runs untouched:{'\n'}</span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-semibold">import</span>
-              <span> express </span>
-              <span className="text-indigo-700 dark:text-indigo-400 font-semibold">from</span>
-              <span className="text-amber-700 dark:text-amber-300"> 'express'</span>;{'\n'}
-              <span className="text-indigo-700 dark:text-indigo-400 font-semibold">const</span>
-              <span> app = express();</span>
+              <span className="text-zinc-500"># 1. Install package{'\n'}</span>
+              <span className="text-indigo-700 dark:text-indigo-400 font-semibold">npm</span>
+              <span> install @easy-metrics/node{'\n\n'}</span>
+              <span className="text-zinc-500"># 2. Add API key to .env:{'\n'}</span>
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">EASY_METRICS_API_KEY</span>
+              <span>="em_live_your_project_key"{'\n\n'}</span>
+              <span className="text-zinc-500"># 3. Start with --import instead of plain node server.js:{'\n'}</span>
+              <span className="text-amber-600 dark:text-amber-400 font-semibold">node</span>
+              <span> --import @easy-metrics/node/register server.js{'\n\n'}</span>
+              <span className="text-zinc-400"># Or nodemon: nodemon --import @easy-metrics/node/register server.js</span>
             </code>
           </pre>
         </div>
