@@ -202,7 +202,7 @@ Connect **Cursor** directly to EasyMetrics so your AI can inspect live execution
    {
      "mcpServers": {
        "easymetrics": {
-         "url": "https://easy-metrics.centralindia.cloudapp.azure.com/mcp",
+         "url": "https://easy-metrics.centralindia.cloudapp.azure.com/mcp/sse",
          "headers": {
            "x-api-key": "em_live_your_project_key"
          }
