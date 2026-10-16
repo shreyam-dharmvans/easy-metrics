@@ -1,6 +1,6 @@
 {
   "name": "@easy-metrics/node",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Zero-config OpenTelemetry observability SDK for Node.js",
   "homepage": "https://easy-metrics.centralindia.cloudapp.azure.com",
   "repository": {
