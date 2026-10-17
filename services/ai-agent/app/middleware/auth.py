@@ -39,13 +39,24 @@ class StatelessAuthMiddleware:
             await self.app(scope, receive, send)
             return
 
-        headers = dict(scope.get("headers", []))
-        auth = headers.get(b"authorization", b"").decode("utf-8")
-        api_key_header = headers.get(b"x-api-key", b"").decode("utf-8").strip()
-        query_string = scope.get("query_string", b"").decode("utf-8")
-        project_header = headers.get(b"x-project-id", b"").decode("utf-8").strip()
-        demo_header = headers.get(b"x-easymetrics-demo", b"").decode("utf-8") == "true"
-        cookie_header = headers.get(b"cookie", b"").decode("utf-8")
+        # Normalize /mcp to /mcp/ so Starlette doesn't issue a 307 redirect that strips auth headers
+        if path == "/mcp":
+            scope["path"] = "/mcp/"
+            path = "/mcp/"
+
+        raw_headers = scope.get("headers", [])
+        headers = {}
+        for k, v in raw_headers:
+            key_str = k.decode("latin1").lower() if isinstance(k, bytes) else str(k).lower()
+            val_str = v.decode("utf-8", errors="ignore") if isinstance(v, bytes) else str(v)
+            headers[key_str] = val_str
+
+        auth = headers.get("authorization", "")
+        api_key_header = headers.get("x-api-key", "").strip()
+        query_string = scope.get("query_string", b"").decode("utf-8") if isinstance(scope.get("query_string"), bytes) else str(scope.get("query_string", ""))
+        project_header = headers.get("x-project-id", "").strip()
+        demo_header = headers.get("x-easymetrics-demo", "") == "true"
+        cookie_header = headers.get("cookie", "")
         is_demo = demo_header or ("easymetrics_is_demo=true" in cookie_header) or ("demo=true" in query_string)
 
         # In Demo Mode, strictly block triggering LLM execution / chat streaming

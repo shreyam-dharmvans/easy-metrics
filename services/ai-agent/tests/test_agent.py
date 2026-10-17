@@ -69,3 +69,42 @@ def test_demo_mode_blocks_chat_access(client):
     assert response.status_code == 403
     assert response.json()["error"] == "Forbidden"
     assert "disabled in Demo Mode" in response.json()["message"]
+
+
+def test_mcp_streamable_http_initialize(client):
+    """
+    Verify that MCP Streamable HTTP endpoint handles JSON-RPC initialize
+    over POST /mcp (used by Antigravity, Claude Desktop).
+    """
+    response = client.post(
+        "/mcp",
+        json={
+            "jsonrpc": "2.0",
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "test-client", "version": "1.0"},
+            },
+            "id": 1,
+        },
+        headers={"accept": "application/json, text/event-stream"},
+    )
+    assert response.status_code == 200
+    assert "event: message" in response.text
+    assert "protocolVersion" in response.text
+
+
+def test_mcp_routes_registered(client):
+    """
+    Verify that MCP Streamable HTTP (/) and SSE (/sse, /messages)
+    routes are registered in the unified MCP application mounted at /mcp.
+    """
+    from app.main import mcp_unified_app
+    route_paths = [r.path for r in mcp_unified_app.routes]
+    assert "/" in route_paths
+    assert "/sse" in route_paths
+    assert "/messages" in route_paths
+
+
+

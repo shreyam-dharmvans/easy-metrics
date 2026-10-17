@@ -10,6 +10,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from starlette.applications import Starlette
+
 from .config import settings
 from .db import init_db_pool, close_db_pool
 from .mcp_server import mcp
@@ -23,6 +25,20 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(na
 
 
 # ==============================================================================
+# FASTMCP DUAL-TRANSPORT (STREAMABLE HTTP & SSE)
+# ==============================================================================
+# 1. Streamable HTTP: MCP Spec 2025 (POST /mcp or /mcp/) for Antigravity, Claude Desktop
+# 2. SSE: MCP Spec 2024-11-05 (GET /mcp/sse, POST /mcp/messages) for Cursor and SSE clients
+mcp_streamable_app = mcp.http_app(path="/", transport="streamable-http")
+mcp_sse_app = mcp.http_app(path="/sse", transport="sse")
+
+# Combine both transports into a unified sub-application mounted at /mcp
+mcp_unified_app = Starlette(
+    routes=mcp_streamable_app.routes + mcp_sse_app.routes
+)
+
+
+# ==============================================================================
 # LIFESPAN MANAGER (STARTUP & SHUTDOWN)
 # ==============================================================================
 @asynccontextmanager
@@ -31,12 +47,15 @@ async def lifespan(app: FastAPI):
     Manages application lifecycles cleanly:
     1. Initializes asyncpg database connection pool.
     2. Compiles LangGraph workflow with PostgreSQL AsyncPostgresSaver memory.
+    3. Initializes FastMCP Streamable HTTP and SSE session managers.
     """
     logger.info("Booting EasyMetrics AI Service on port %d...", settings.agent_port)
     await init_db_pool()
     await init_agent_graph()
     logger.info("EasyMetrics AI Service initialized successfully.")
-    yield
+    async with mcp_streamable_app.lifespan(app):
+        async with mcp_sse_app.lifespan(app):
+            yield
     logger.info("Shutting down EasyMetrics AI Service...")
     await close_agent_graph()
     await close_db_pool()
@@ -65,9 +84,9 @@ app.add_middleware(
 # 2. Stateless Multi-Tenant Auth Middleware
 app.add_middleware(StatelessAuthMiddleware)
 
-# 3. Mount FastMCP Remote Sub-Application (/mcp/sse)
-mcp_asgi_app = mcp.http_app(transport="sse")
-app.mount("/mcp", mcp_asgi_app)
+# 3. Mount FastMCP Remote Sub-Application at /mcp
+# Handles both Streamable HTTP (/mcp, /mcp/) and SSE (/mcp/sse, /mcp/messages)
+app.mount("/mcp", mcp_unified_app)
 
 # 4. Include Modular Routers
 app.include_router(chat_router)
