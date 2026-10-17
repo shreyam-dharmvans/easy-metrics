@@ -192,12 +192,29 @@ That's it! Start your app, make a few requests, and live latency waterfalls will
 
 ---
 
-## 🧠 Connecting Cursor IDE via MCP
+## 🧠 Connecting Your AI IDE via MCP (Antigravity, Cursor, Claude)
 
-Connect **Cursor** directly to EasyMetrics so your AI can inspect live execution waterfalls while you write code:
+Connect your favorite AI coding assistant directly to EasyMetrics so it can inspect live execution waterfalls and query route health while you write code.
 
+### Option A: Google Antigravity & Claude Desktop (Streamable HTTP)
+Antigravity and Claude Desktop use modern **Streamable HTTP (MCP 2025 Spec)**. Add this to your `mcp_config.json` (or `claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "easymetrics": {
+      "url": "https://easy-metrics.centralindia.cloudapp.azure.com/mcp",
+      "headers": {
+        "x-api-key": "em_live_your_project_key"
+      }
+    }
+  }
+}
+```
+
+### Option B: Cursor & VS Code Extensions (SSE)
+Cursor, Cline, and Continue connect via **Server-Sent Events (SSE)**:
 1. In Cursor, open **Settings &rarr; Features &rarr; MCP &rarr; Add New MCP Server**.
-2. Add your EasyMetrics connection:
+2. Set Type to **SSE** and configure:
    ```json
    {
      "mcpServers": {
@@ -211,10 +228,10 @@ Connect **Cursor** directly to EasyMetrics so your AI can inspect live execution
    }
    ```
 
-3. **Ask Cursor directly in chat:**
-   > *"Cursor, check EasyMetrics for recent slow requests on the checkout endpoint. Inspect the execution waterfall and tell me which database query or API call caused the delay."*
+3. **Ask your AI directly in chat:**
+   > *"Check EasyMetrics for recent slow requests on the checkout endpoint. Inspect the execution waterfall and tell me which database query or API call caused the delay."*
 
-Cursor will retrieve the live request timeline, see that the SQL query with JOINs took 2,480ms, correlate it with your local schema file, and write the exact migration or index needed!
+Your AI will retrieve the live request timeline, see that the SQL query took 2,480ms, correlate it with your local schema file, and write the exact migration or index needed!
 
 ---
 

@@ -100,6 +100,7 @@ function SettingsContent() {
   const [copiedKeyId, setCopiedKeyId] = useState<string | null>(null);
   const [copiedSnippet, setCopiedSnippet] = useState(false);
   const [copiedMcpSnippet, setCopiedMcpSnippet] = useState(false);
+  const [mcpClientType, setMcpClientType] = useState<'antigravity' | 'cursor'>('antigravity');
   const [visibleKeyIds, setVisibleKeyIds] = useState<Record<string, boolean>>({});
 
   // Threshold local form state
@@ -300,14 +301,18 @@ node --import @easy-metrics/node/register server.js
 # Or with nodemon in development:
 # nodemon --import @easy-metrics/node/register server.js`;
 
-  const agentUrl = getAgentBaseUrl();
-  const mcpSseUrl = `${agentUrl}/mcp/sse`;
+  const rawAgentUrl = getAgentBaseUrl();
+  const agentUrl =
+    rawAgentUrl && !rawAgentUrl.includes('localhost') && !rawAgentUrl.includes('127.0.0.1')
+      ? rawAgentUrl
+      : 'https://easy-metrics.centralindia.cloudapp.azure.com';
+  const mcpActiveUrl = mcpClientType === 'antigravity' ? `${agentUrl}/mcp` : `${agentUrl}/mcp/sse`;
 
   const mcpConfigCode = JSON.stringify(
     {
       mcpServers: {
         easymetrics: {
-          url: mcpSseUrl,
+          url: mcpActiveUrl,
           headers: {
             'x-api-key': activeApiKeyStr,
           },
@@ -838,8 +843,12 @@ node --import @easy-metrics/node/register server.js
               {/* Status Pill */}
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-100/80 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700/80 text-xs self-start sm:self-auto font-mono">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-zinc-700 dark:text-zinc-300">SSE Endpoint:</span>
-                <span className="font-semibold text-zinc-900 dark:text-white">/mcp/sse</span>
+                <span className="text-zinc-700 dark:text-zinc-300">
+                  {mcpClientType === 'antigravity' ? 'Streamable HTTP:' : 'SSE Stream:'}
+                </span>
+                <span className="font-semibold text-zinc-900 dark:text-white">
+                  {mcpClientType === 'antigravity' ? '/mcp' : '/mcp/sse'}
+                </span>
               </div>
             </div>
 
@@ -848,6 +857,44 @@ node --import @easy-metrics/node/register server.js
               <Info className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
               <div className="text-zinc-700 dark:text-zinc-300">
                 Generated configuration for active project: <strong className="text-zinc-950 dark:text-white">{currentProject.name}</strong>.
+              </div>
+            </div>
+
+            {/* Client Transport Selector Tabs */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+              <div className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+                Select your AI Assistant / Editor:
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-zinc-200/70 dark:bg-zinc-800/70 border border-zinc-200 dark:border-zinc-700/80 w-fit">
+                <button
+                  type="button"
+                  onClick={() => setMcpClientType('antigravity')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    mcpClientType === 'antigravity'
+                      ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span>🤖 Google Antigravity &amp; Claude Desktop</span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-bold">
+                    /mcp
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setMcpClientType('cursor')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    mcpClientType === 'cursor'
+                      ? 'bg-white dark:bg-zinc-900 text-zinc-950 dark:text-white shadow-xs'
+                      : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                  }`}
+                >
+                  <span>⚡ Cursor &amp; Cline / Continue</span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-bold">
+                    /mcp/sse
+                  </span>
+                </button>
               </div>
             </div>
 
@@ -860,7 +907,9 @@ node --import @easy-metrics/node/register server.js
                     <span className="w-3 h-3 rounded-full bg-amber-500/80" />
                     <span className="w-3 h-3 rounded-full bg-emerald-500/80" />
                   </div>
-                  <span className="text-xs font-mono text-zinc-400 ml-2">mcpServers Configuration (JSON)</span>
+                  <span className="text-xs font-mono text-zinc-400 ml-2">
+                    {mcpClientType === 'antigravity' ? 'mcpServers (Streamable HTTP: /mcp)' : 'mcpServers (SSE Stream: /mcp/sse)'}
+                  </span>
                 </div>
 
                 <button
@@ -885,42 +934,70 @@ node --import @easy-metrics/node/register server.js
             {/* IDE Setup Instructions Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Google Antigravity & Claude Desktop Card */}
-              <div className="p-5 rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm shadow-2xs">
-                    🤖
+              <div
+                onClick={() => setMcpClientType('antigravity')}
+                className={`p-5 rounded-2xl border transition-all cursor-pointer space-y-3 ${
+                  mcpClientType === 'antigravity'
+                    ? 'border-emerald-500/80 dark:border-emerald-500/60 bg-emerald-500/5 dark:bg-emerald-950/20 ring-1 ring-emerald-500/30'
+                    : 'border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm shadow-2xs">
+                      🤖
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-zinc-950 dark:text-white">Google Antigravity &amp; Claude Desktop</h3>
+                      <p className="text-[11px] text-zinc-500">Streamable HTTP Transport (MCP 2025 Spec)</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-zinc-950 dark:text-white">Google Antigravity &amp; Claude Desktop</h3>
-                    <p className="text-[11px] text-zinc-500">Native Open MCP Configuration</p>
-                  </div>
+                  {mcpClientType === 'antigravity' && (
+                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                      Selected
+                    </span>
+                  )}
                 </div>
 
                 <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2 list-decimal list-inside pl-1 leading-relaxed">
-                  <li>Open your MCP configuration file (e.g. <code className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">claude_desktop_config.json</code> or Antigravity MCP settings).</li>
-                  <li>Under the <code className="font-mono text-zinc-900 dark:text-zinc-100">&quot;mcpServers&quot;</code> key, paste the <code className="font-mono text-emerald-600 dark:text-emerald-400">&quot;easymetrics&quot;</code> block above.</li>
-                  <li>Save and restart your editor session or reload MCP servers.</li>
-                  <li>EasyMetrics observability tools (<code className="text-zinc-900 dark:text-zinc-200 font-mono text-[11px]">inspect_recent_traces</code>, <code className="text-zinc-900 dark:text-zinc-200 font-mono text-[11px]">query_route_metrics</code>) are immediately ready for AI use.</li>
+                  <li>Open your MCP configuration file (e.g. <code className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">mcp_config.json</code> in Antigravity or <code className="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">claude_desktop_config.json</code>).</li>
+                  <li>Under the <code className="font-mono text-zinc-900 dark:text-zinc-100">&quot;mcpServers&quot;</code> key, paste the <code className="font-mono text-emerald-600 dark:text-emerald-400">&quot;easymetrics&quot;</code> block above (points directly to <code className="text-emerald-600 dark:text-emerald-400 font-mono">/mcp</code>).</li>
+                  <li>Save and restart your editor session (e.g. in VS Code: <code className="font-mono text-[11px]">Developer: Reload Window</code>).</li>
+                  <li>EasyMetrics observability tools (<code className="text-zinc-900 dark:text-zinc-200 font-mono text-[11px]">get_route_health</code>, <code className="text-zinc-900 dark:text-zinc-200 font-mono text-[11px]">get_trace_waterfall</code>) are immediately ready for AI use!</li>
                 </ol>
               </div>
 
-              {/* VS Code & Cursor Card */}
-              <div className="p-5 rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm shadow-2xs">
-                    ⚡
+              {/* Cursor & Cline / Continue Card */}
+              <div
+                onClick={() => setMcpClientType('cursor')}
+                className={`p-5 rounded-2xl border transition-all cursor-pointer space-y-3 ${
+                  mcpClientType === 'cursor'
+                    ? 'border-indigo-500/80 dark:border-indigo-500/60 bg-indigo-500/5 dark:bg-indigo-950/20 ring-1 ring-indigo-500/30'
+                    : 'border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm shadow-2xs">
+                      ⚡
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-zinc-950 dark:text-white">Cursor &amp; Cline / Continue</h3>
+                      <p className="text-[11px] text-zinc-500">Server-Sent Events Transport (MCP 2024 SSE)</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-zinc-950 dark:text-white">VS Code &amp; Cursor</h3>
-                    <p className="text-[11px] text-zinc-500">Cline, Roo Code, Continue, or Cursor</p>
-                  </div>
+                  {mcpClientType === 'cursor' && (
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950/80 text-[10px] font-bold text-indigo-700 dark:text-indigo-300">
+                      Selected
+                    </span>
+                  )}
                 </div>
 
                 <ol className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2 list-decimal list-inside pl-1 leading-relaxed">
-                  <li>In VS Code with extensions like <strong className="text-zinc-900 dark:text-zinc-100">Cline</strong>, <strong className="text-zinc-900 dark:text-zinc-100">Roo Code</strong>, or <strong className="text-zinc-900 dark:text-zinc-100">Continue</strong>, add an SSE MCP server using the URL above.</li>
-                  <li>In Cursor: Open <strong className="text-zinc-900 dark:text-zinc-100">Settings</strong> &rarr; <strong className="text-zinc-900 dark:text-zinc-100">Features</strong> &rarr; <strong className="text-zinc-900 dark:text-zinc-100">MCP</strong> &rarr; <strong className="text-zinc-900 dark:text-zinc-100">+ Add New MCP Server</strong> (or paste into <code className="text-indigo-600 dark:text-indigo-400 font-mono">.cursor/mcp.json</code>).</li>
-                  <li>Set Type to <strong className="text-zinc-900 dark:text-zinc-100">SSE</strong>, Name to <code className="text-indigo-600 dark:text-indigo-400 font-mono">easymetrics</code>, and paste the URL.</li>
-                  <li>Your AI pair programmer can now inspect performance bottlenecks and latency regressions directly during chat.</li>
+                  <li>In Cursor: Open <strong className="text-zinc-900 dark:text-zinc-100">Settings</strong> &rarr; <strong className="text-zinc-900 dark:text-zinc-100">Features</strong> &rarr; <strong className="text-zinc-900 dark:text-zinc-100">MCP</strong> &rarr; <strong className="text-zinc-900 dark:text-zinc-100">+ Add New MCP Server</strong> (or edit <code className="text-indigo-600 dark:text-indigo-400 font-mono">.cursor/mcp.json</code>).</li>
+                  <li>Set Type to <strong className="text-zinc-900 dark:text-zinc-100">SSE</strong>, Name to <code className="text-indigo-600 dark:text-indigo-400 font-mono">easymetrics</code>, and paste the URL (points to <code className="text-indigo-600 dark:text-indigo-400 font-mono">/mcp/sse</code>).</li>
+                  <li>In VS Code with <strong className="text-zinc-900 dark:text-zinc-100">Cline</strong> or <strong className="text-zinc-900 dark:text-zinc-100">Continue</strong>, add an SSE MCP server using the configuration above.</li>
+                  <li>Your AI pair programmer can now inspect performance bottlenecks and trace waterfalls directly during chat!</li>
                 </ol>
               </div>
             </div>
